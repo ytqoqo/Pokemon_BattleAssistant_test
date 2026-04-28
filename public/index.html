@@ -1,0 +1,2823 @@
+<!DOCTYPE html>
+
+<html data-immersive-translate-page-theme="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VGC 2026 竞技场对战助手</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
+<script src="data/pokemon.js"></script>
+<script>
+    // 纯静态版本，所有数据本地处理
+    // 属性英文名 → 中文名映射
+    const typeNameMap = {
+    'Normal': '一般',
+    'Fire': '火',
+    'Water': '水',
+    'Electric': '电',
+    'Grass': '草',
+    'Ice': '冰',
+    'Fighting': '格斗',
+    'Poison': '毒',
+    'Ground': '地面',
+    'Flying': '飞行',
+    'Psychic': '超能力',
+    'Bug': '虫',
+    'Rock': '岩石',
+    'Ghost': '幽灵',
+    'Dragon': '龙',
+    'Dark': '恶',
+    'Steel': '钢',
+    'Fairy': '妖精'
+};
+    // 从宝可梦名单.txt 中提取的所有宝可梦名称（基础形态 + 超级进化）
+    const allPokemonNames = [
+    "妙蛙花", "喷火龙", "水箭龟", "大针蜂", "大比鸟", "阿柏怪", "皮卡丘", "雷丘（关都）", "雷丘（阿罗拉）", "皮可西",
+    "九尾（关都）", "九尾（阿罗拉）", "风速狗（关都）", "风速狗（洗翠）", "胡地", "怪力", "大食花", "呆壳兽（关都）", "呆壳兽（伽勒尔）", "耿鬼",
+    "袋兽", "宝石海星", "凯罗斯", "肯泰罗（关都）", "肯泰罗（帕底亚-斗战种）", "肯泰罗（帕底亚-火炽种）", "肯泰罗（帕底亚-水澜种）", "暴鲤龙", "百变怪", "水伊布", "雷伊布", "火伊布",
+    "化石翼龙", "卡比兽", "快龙", "大竺葵", "火暴兽（城都）", "火暴兽（洗翠）", "大力鳄", "阿利多斯", "电龙", "玛力露丽",
+    "蚊香蛙皇", "太阳伊布", "月亮伊布", "呆呆王（关都）", "呆呆王（伽勒尔）", "佛烈托斯", "大钢蛇", "巨钳螳螂", "赫拉克罗斯", "盔甲鸟",
+    "黑鲁加", "班基拉斯", "大嘴鸥", "沙奈朵", "勾魂眼", "波士可多拉", "恰雷姆", "雷电兽", "巨牙鲨", "喷火驼",
+    "煤炭龟", "七夕青鸟", "美纳斯", "飘浮泡泡", "诅咒娃娃", "风铃铃", "阿勃梭鲁", "冰鬼护", "土台龟", "烈焰猴",
+    "帝王拿波", "伦琴猫", "罗丝雷朵", "战槌龙", "护城龙", "长耳兔", "花岩怪", "烈咬陆鲨", "路卡利欧", "河马兽",
+    "毒骷蛙", "暴雪王", "玛狃拉", "超甲狂犀", "叶伊布", "冰伊布", "天蝎王", "象牙猪", "艾路雷朵", "雪妖女",
+    "洛托姆", "洛托姆（加热形态）", "洛托姆（清洗形态）", "洛托姆（结冰形态）", "洛托姆（旋转形态）", "洛托姆（切割形态）", "君主蛇", "炎武王", "大剑鬼（合众）", "大剑鬼（洗翠）", "步哨鼠", "酷豹", "花椰猿", "爆香猿", "冷水猿",
+    "龙头地鼠", "差不多娃娃", "修建老匠", "风妖精", "流氓鳄", "死神棺", "灰尘山", "索罗亚克（合众）", "索罗亚克（洗翠）", "人造细胞卵",
+    "双倍多多冰", "电飞鼠", "水晶灯火灵", "冻原熊", "泥巴鱼（合众）", "泥巴鱼（伽勒尔）", "泥偶巨人", "三首恶龙", "火神蛾", "布里卡隆",
+    "妖火红狐", "甲贺忍蛙", "掘地兔", "烈箭鹰", "彩粉蝶", "花蓓蓓", "花洁夫人", "流氓熊猫", "多丽米亚", "妙喵",
+    "坚盾剑怪", "芳香精", "胖甜妮", "钢炮臂虾", "光电伞蜥", "怪颚龙", "冰雪龙", "仙子伊布", "摔角鹰人", "咚咚鼠",
+    "黏美龙（卡洛斯）", "黏美龙（洗翠）", "钥圈儿", "朽木妖", "南瓜怪人", "冰岩怪（卡洛斯）", "冰岩怪（洗翠）", "音波龙", "狙射树枭（阿罗拉）", "狙射树枭（洗翠）",
+    "炽焰咆哮虎", "西狮海壬", "铳嘴大鸟", "好胜毛蟹", "鬃岩狼人", "超坏星", "重泥挽马", "滴蛛霸", "焰后蜥", "甜冷美后",
+    "智挥猩", "投掷猴", "谜拟丘", "老翁龙", "杖尾鳞甲龙", "钢铠鸦", "苹裹龙", "丰蜜龙", "沙螺蟒", "怖思壶",
+    "布莉姆温", "踏冰人偶", "死神板", "霜奶仙", "莫鲁贝可", "多龙巴鲁托", "诡角鹿", "劈斧螳螂", "幽尾玄鱼", "大狃拉",
+    "魔幻假面喵", "骨纹巨声鳄", "狂欢浪舞鸭", "一家鼠", "盐石巨灵", "红莲铠骑", "苍炎刃鬼", "电肚蛙", "狠辣椒", "超能艳鸵",
+    "巨锻匠", "海豚侠", "拖拖蚓", "晶光花", "奇麒麟", "仆刀将军", "厄诡椪", "铝钢桥龙", "蜜集大蛇",
+    "超级妙蛙花", "超级喷火龙 X", "超级喷火龙 Y", "超级水箭龟", "超级大针蜂", "超级大比鸟", "超级皮可西", "超级胡地", "超级大食花", "超级呆壳兽",
+    "超级耿鬼", "超级袋兽", "超级宝石海星", "超级凯罗斯", "超级暴鲤龙", "超级化石翼龙", "超级快龙", "超级大竺葵", "超级大力鳄", "超级电龙",
+    "超级大钢蛇", "超级巨钳螳螂", "超级赫拉克罗斯", "超级盔甲鸟", "超级黑鲁加", "超级班基拉斯", "超级沙奈朵", "超级勾魂眼", "超级波士可多拉", "超级恰雷姆",
+    "超级雷电兽", "超级巨牙鲨", "超级喷火驼", "超级七夕青鸟", "超级诅咒娃娃", "超级风铃铃", "超级阿勃梭鲁", "超级冰鬼护", "超级长耳兔", "超级烈咬陆鲨",
+    "超级路卡利欧", "超级暴雪王", "超级艾路雷朵", "超级雪妖女", "超级炎武王", "超级龙头地鼠", "超级差不多娃娃", "超级水晶灯火灵", "超级泥偶巨人", "超级布里卡隆",
+    "超级妖火红狐", "超级甲贺忍蛙", "超级花叶蒂", "超级妙喵", "超级摔角鹰人", "超级好胜毛蟹", "超级老翁龙", "超级狠辣椒", "超级晶光花"
+];
+
+// 动态生成 datalist（用于输入框的下拉建议）
+function createDatalist() {
+    let datalist = document.getElementById('global-pokemon-list');
+    if (datalist) return;
+    datalist = document.createElement('datalist');
+    datalist.id = 'global-pokemon-list';
+    allPokemonNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        datalist.appendChild(option);
+    });
+    document.body.appendChild(datalist);
+}
+</script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+SC:wght@300;400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #020617;
+            overflow: hidden;
+            width: 1920px;
+            height: 1080px;
+            margin: 0 auto;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .font-header {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hp-gradient-high { background: linear-gradient(90deg, #22c55e, #4ade80); }
+        .hp-gradient-mid { background: linear-gradient(90deg, #eab308, #fde047); }
+        .hp-gradient-low { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            height: 4px;
+            border-radius: 2px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+.speed-rank-item {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 动画效果 */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+        }
+        .active-red { animation: pulse-red 2s infinite; }
+        input[list] {
+            color-scheme: dark;
+        }
+        .speed-rank-item input {
+            background: transparent;
+        }
+    </style>
+<style data-id="immersive-translate-input-injected-css"></style>
+</head>
+<body class="flex flex-col">
+<!-- 顶部状态栏 -->
+<header class="h-16 w-full glass-panel flex items-center justify-between px-6 border-b border-white/10 z-50 shrink-0">
+<!-- 左侧：队伍方案选择 -->
+	<div class="flex items-center gap-4 w-[400px] relative">
+	<button class="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/50 rounded-lg transition-all group" onclick="toggleTeamPopup()">
+	<iconify-icon class="text-xl text-blue-400 group-hover:scale-110 transition-transform" icon="mdi:format-list-bulleted-type"></iconify-icon>
+	<span class="text-sm font-bold tracking-widest text-blue-400">队伍方案</span>
+	<iconify-icon class="text-blue-400/50 ml-1" icon="mdi:chevron-down"></iconify-icon>
+	</button>
+	<!-- 队伍方案弹窗 -->
+	<div class="hidden absolute top-full left-0 mt-3 w-80 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 z-[100]" id="team-popup">
+	<div class="flex items-center justify-between mb-4 px-1">
+	<div class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold">队伍方案管理</div>
+	<button class="text-[10px] bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 px-2 py-1 rounded border border-blue-500/30 transition-colors flex items-center gap-1" onclick="addTeamScheme()">
+	<iconify-icon icon="mdi:plus"></iconify-icon> 新增队伍
+	</button>
+	</div>
+	<div class="grid grid-cols-1 gap-2 max-h-[480px] overflow-y-auto custom-scrollbar" id="team-schemes-list">
+	<!-- 由 JavaScript 动态渲染 -->
+	</div>
+	</div>
+	</div>
+	<!-- 中间：核心对战信息面板 -->
+<div class="flex flex-1 justify-center">
+<div class="bg-white/5 border border-white/10 rounded-lg px-6 py-1 flex items-center gap-8 shadow-inner">
+<div class="text-center">
+<div class="text-[9px] text-slate-500 uppercase mb-0">Turn</div>
+<div class="text-xl font-header font-bold text-amber-500" id="turn-count">01</div>
+</div>
+<div class="h-6 w-px bg-white/10"></div>
+<div class="flex flex-col items-center min-w-[80px] cursor-pointer" onclick="cycleWeather()">
+<div class="text-[9px] text-slate-500 uppercase">Weather</div>
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-amber-400 text-base" icon="mdi:white-balance-sunny" id="weather-icon"></iconify-icon>
+<span class="text-xs font-bold" id="weather-text">晴朗</span>
+</div>
+</div>
+<div class="h-8 w-px bg-white/20"></div>
+<div class="text-center">
+<div class="text-2xl font-header font-bold text-white tracking-tighter" id="timer">13:59</div>
+<div class="text-[8px] text-slate-500 tracking-widest uppercase">MATCH TIME</div>
+</div>
+<div class="h-8 w-px bg-white/20"></div>
+<div class="flex flex-col items-center min-w-[80px] cursor-pointer" onclick="cycleTerrain()">
+<div class="text-[9px] text-slate-500 uppercase">Terrain</div>
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-blue-400 text-base" icon="mdi:land-plots" id="terrain-icon"></iconify-icon>
+<span class="text-xs font-bold" id="terrain-text">无</span>
+</div>
+</div>
+<div class="h-6 w-px bg-white/10"></div>
+<div class="text-center">
+<div class="text-[9px] text-slate-500 uppercase">Status</div>
+<div class="flex items-center gap-1">
+<div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+<span class="text-[9px] font-bold text-green-500 uppercase">Live</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 右侧：模式切换 -->
+	<div class="flex items-center justify-end gap-4 w-[400px] relative">
+	<button class="flex items-center gap-2 px-4 py-2 bg-rose-600/20 hover:bg-rose-600/40 border border-rose-500/50 rounded-lg transition-all group" onclick="toggleModePopup()">
+	<iconify-icon class="text-xl text-rose-400 group-hover:rotate-180 transition-transform duration-500" icon="mdi:swap-horizontal"></iconify-icon>
+	<span class="text-sm font-bold tracking-widest text-rose-400">切换模式</span>
+	<iconify-icon class="text-rose-400/50 ml-1" icon="mdi:chevron-down"></iconify-icon>
+	</button>
+	<!-- 模式选择弹窗 -->
+	<div class="hidden absolute top-full right-0 mt-3 w-48 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-2 z-[100]" id="mode-popup">
+	<div class="flex flex-col gap-1">
+	<button class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-rose-500/10 text-slate-300 hover:text-rose-400 transition-colors text-left group" onclick="triggerScreenshotMode()">
+	<iconify-icon class="text-lg group-hover:scale-110 transition-transform" icon="mdi:camera"></iconify-icon>
+	<span class="text-xs font-bold uppercase tracking-wider">截图模式</span>
+	</button>
+	<div class="h-px bg-white/5 mx-2 my-1"></div>
+	<button class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-blue-500/10 text-slate-300 hover:text-blue-400 transition-colors text-left group" onclick="setManualMode()">
+	<iconify-icon class="text-lg group-hover:scale-110 transition-transform" icon="mdi:cursor-default-click"></iconify-icon>
+	<span class="text-xs font-bold uppercase tracking-wider">手动模式</span>
+	</button>
+	</div>
+	</div>
+	<!-- 隐藏的文件上传 -->
+	<input accept="image/*" class="hidden" id="screenshot-input" onchange="handleFileUpload(event)" type="file"/>
+	<div class="h-8 w-px bg-white/10 mx-1"></div>
+	<div class="flex items-center gap-3">
+	<button class="w-8 h-8 flex items-center justify-center bg-white/5 border border-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition" onclick="location.reload()">
+	<iconify-icon class="text-lg" icon="mdi:refresh"></iconify-icon>
+	</button>
+	</div>
+	</div>
+	</header>
+<!-- 主体对战区 -->
+<main class="flex-1 flex overflow-hidden p-3 gap-3">
+<!-- 左侧：我方区域 (Player Zone) -->
+<section class="w-[600px] flex flex-col gap-3">
+<!-- 队伍列表 -->
+<div class="flex-1 flex flex-col min-h-0 bg-white/[0.02] rounded-2xl border border-white/5 p-3">
+<div class="flex items-center justify-between mb-2 px-2">
+<div class="flex items-center gap-2">
+<iconify-icon class="text-blue-500 text-lg" icon="mdi:shield-check"></iconify-icon>
+<h2 class="font-bold text-slate-300 tracking-wider uppercase text-xs">我方队伍 (TEAM BLUE)</h2>
+</div>
+<button class="flex items-center gap-2 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 transition group" id="player-mode-btn" onclick="togglePlayerMode()">
+<iconify-icon class="text-blue-400 text-sm group-hover:rotate-180 transition-transform duration-500" icon="mdi:settings-helper"></iconify-icon>
+<span class="text-[9px] text-blue-300 font-bold uppercase tracking-widest">详细模式</span>
+</button>
+</div>
+<div class="grid grid-cols-1 gap-2 flex-1 overflow-y-auto custom-scrollbar pr-1" id="player-team">
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ec4899">Fairy</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#94a3b8">Steel</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">苍响</h3>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">220</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p1')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p1')" title="腐朽的剑">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">腐朽的剑</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p1', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">不挠之剑</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="巨兽斩 (PP 8)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">巨兽</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="嬉闹 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">嬉闹</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="圣剑 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">圣剑</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ef4444">Fire</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#475569">Dark</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">咆哮虎</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">81</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p2')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">85%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p2')" title="勿花果">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">勿花果</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 85%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p2', this.value)" type="range" value="85"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">威吓</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="击掌奇袭 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">击掌</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="闪焰冲锋 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">闪焰</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="抛下狠话 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">抛下</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="拍落 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">拍落</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#6366f1">Dragon</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#a855f7">Ghost</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">多龙巴鲁托</h3>
+<iconify-icon class="text-rose-400 text-xs" icon="mdi:gender-female"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">213</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p3')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p3')" title="生命玉">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">生命玉</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p3', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">恒净之躯</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="龙箭 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">龙箭</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="潜灵奇袭 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">潜灵</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="飞身重压 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">飞身</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#22c55e">Grass</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">轰擂金刚猩</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">105</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p4')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p4')" title="突击背心">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">突击背心</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p4', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">青草制造者</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="滑梯 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">滑梯</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="拍落 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">拍落</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="十万马力 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">十万</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="极速折返 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">极速</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#3b82f6">Water</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ea580c">Fighting</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">武道熊师</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">163</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p5')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p5')" title="神秘水滴">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">神秘水滴</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p5', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">无形拳</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="水流连打 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">水流</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="近身战 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">近身</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="水流喷射 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">水流</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="看穿 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">看穿</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#eab308">Electric</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#0ea5e9">Flying</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">雷电云</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">179</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p6')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p6')" title="腰带">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">腰带</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p6', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">不服输</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="疯狂伏特 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">疯狂</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="飞翔 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">飞翔</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="蛮力 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">蛮力</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 中间：核心分析区域 -->
+<section class="flex-1 flex flex-col gap-3 min-w-0">
+<!-- 速度排名 (Speed Tracker) -->
+<div class="h-[520px] glass-panel rounded-2xl overflow-hidden flex flex-col shadow-2xl relative border border-white/10 shrink-0">
+<div class="bg-amber-500/10 p-2.5 border-b border-amber-500/20 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<iconify-icon class="text-amber-400 text-lg animate-pulse" icon="mdi:lightning-bolt"></iconify-icon>
+<span class="font-bold text-amber-400 tracking-widest uppercase text-xs">速度排名 (SPD ORDER)</span>
+</div>
+<span class="text-[9px] text-amber-500/60 font-mono bg-amber-500/10 px-1.5 py-0.5 rounded uppercase">Live Data</span>
+</div>
+<div class="flex-1 p-2 flex flex-col gap-1.5 relative overflow-y-auto custom-scrollbar" id="speed-ranking">
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 0">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        1
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">黑马蕾冠王</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">222</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 1">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        2
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">苍响</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">220</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 2">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        3
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">多龙巴鲁托</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">213</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 3">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        4
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">风妖精</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">184</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 4">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        5
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">雷电云</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">179</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 5">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        6
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">闪电鸟</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">167</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 6">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        7
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">武道熊师</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">163</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 7">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        8
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">盖欧卡</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">156</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 8">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        9
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">猛犸</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">142</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 9">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        10
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">轰擂金刚猩</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">105</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 10">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        11
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">咆哮虎</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">81</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 11">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        12
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">长毛巨魔</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">80</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 队伍弱点分析 (Team Weakness Analysis) - 新整合面板 -->
+<div class="flex-1 glass-panel rounded-2xl border border-white/10 p-3 flex flex-col min-h-0">
+<div class="flex items-center gap-2 border-b border-white/5 pb-2 mb-2 shrink-0">
+<iconify-icon class="text-indigo-400 text-lg" icon="mdi:chart-arc"></iconify-icon>
+<span class="text-xs font-bold text-slate-300 uppercase tracking-widest">队伍属性与弱点分析</span>
+</div>
+<div class="flex-1 grid grid-cols-2 gap-3 min-h-0">
+<!-- 我方分析 -->
+<div class="flex flex-col gap-2 min-h-0">
+<div class="flex items-center justify-between bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">
+<span class="text-[10px] text-blue-400 font-bold uppercase">TEAM BLUE</span>
+<span class="text-[8px] text-slate-500 uppercase">Home</span>
+</div>
+<div class="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1">
+<div>
+<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">属性分布</span>
+<div class="flex flex-wrap gap-1" id="player-type-dist">
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#ec4899"></div>
+<span class="text-[9px] text-slate-300 font-bold">Fairy <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#94a3b8"></div>
+<span class="text-[9px] text-slate-300 font-bold">Steel <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#ef4444"></div>
+<span class="text-[9px] text-slate-300 font-bold">Fire <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#475569"></div>
+<span class="text-[9px] text-slate-300 font-bold">Dark <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#6366f1"></div>
+<span class="text-[9px] text-slate-300 font-bold">Dragon <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#a855f7"></div>
+<span class="text-[9px] text-slate-300 font-bold">Ghost <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#22c55e"></div>
+<span class="text-[9px] text-slate-300 font-bold">Grass <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#3b82f6"></div>
+<span class="text-[9px] text-slate-300 font-bold">Water <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#ea580c"></div>
+<span class="text-[9px] text-slate-300 font-bold">Fighting <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#eab308"></div>
+<span class="text-[9px] text-slate-300 font-bold">Electric <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#0ea5e9"></div>
+<span class="text-[9px] text-slate-300 font-bold">Flying <span class="text-slate-500">x</span>1</span>
+</div>
+</div>
+</div>
+<div class="pt-1 border-t border-white/5">
+<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">防守弱点统计</span>
+<div class="flex flex-wrap gap-1.5" id="player-weakness-analysis">
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:image-filter-hdr" style="color:#a16207"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Ground</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:auto-fix" style="color:#ec4899"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Fairy</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:snowflake" style="color:#7dd3fc"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Ice</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:flask-poison" style="color:#a855f7"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-700 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Poison</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:fire" style="color:#ef4444"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-700 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Fire</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 敌方分析 -->
+<div class="flex flex-col gap-2 min-h-0 border-l border-white/5 pl-3">
+<div class="flex items-center justify-between bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">
+<span class="text-[10px] text-rose-400 font-bold uppercase">TEAM RED</span>
+<span class="text-[8px] text-slate-500 uppercase">Enemy</span>
+</div>
+<div class="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1">
+<div>
+<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">属性分布</span>
+<div class="flex flex-wrap gap-1" id="enemy-type-dist">
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#3b82f6"></div>
+<span class="text-[9px] text-slate-300 font-bold">Water <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#f43f5e"></div>
+<span class="text-[9px] text-slate-300 font-bold">Psychic <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#a855f7"></div>
+<span class="text-[9px] text-slate-300 font-bold">Ghost <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#7dd3fc"></div>
+<span class="text-[9px] text-slate-300 font-bold">Ice <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#a16207"></div>
+<span class="text-[9px] text-slate-300 font-bold">Ground <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#eab308"></div>
+<span class="text-[9px] text-slate-300 font-bold">Electric <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#0ea5e9"></div>
+<span class="text-[9px] text-slate-300 font-bold">Flying <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#475569"></div>
+<span class="text-[9px] text-slate-300 font-bold">Dark <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#ec4899"></div>
+<span class="text-[9px] text-slate-300 font-bold">Fairy <span class="text-slate-500">x</span>2</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#22c55e"></div>
+<span class="text-[9px] text-slate-300 font-bold">Grass <span class="text-slate-500">x</span>1</span>
+</div>
+</div>
+</div>
+<div class="pt-1 border-t border-white/5">
+<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">防守弱点统计</span>
+<div class="flex flex-wrap gap-1.5" id="enemy-weakness-analysis">
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:bug" style="color:#84cc16"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Bug</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:shield" style="color:#94a3b8"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Steel</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:snowflake" style="color:#7dd3fc"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Ice</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:flask-poison" style="color:#a855f7"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Poison</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:lightning-bolt" style="color:#eab308"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-700 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Electric</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="h-1 bg-gradient-to-r from-blue-500 via-amber-400 to-rose-500 rounded-full shrink-0"></div>
+</section>
+<!-- 右侧：敌方区域 (Enemy Zone) -->
+<section class="w-[600px] flex flex-col gap-3">
+<!-- 队伍列表 -->
+<div class="flex-1 flex flex-col min-h-0 bg-white/[0.02] rounded-2xl border border-white/5 p-3">
+<div class="flex items-center justify-between mb-2 px-2">
+<button class="flex items-center gap-2 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 transition group" id="enemy-mode-btn" onclick="toggleEnemyMode()">
+<iconify-icon class="text-rose-400 text-sm group-hover:rotate-180 transition-transform duration-500" icon="mdi:settings-helper"></iconify-icon>
+<span class="text-[9px] text-rose-300 font-bold uppercase tracking-widest">详细模式</span>
+</button>
+<div class="flex items-center gap-2">
+<h2 class="font-bold text-slate-300 tracking-wider uppercase text-xs">敌方队伍 (TEAM RED)</h2>
+<iconify-icon class="text-rose-600 text-lg" icon="mdi:sword"></iconify-icon>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-2 flex-1 overflow-y-auto custom-scrollbar pr-1" id="enemy-team">
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#3b82f6">Water</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">盖欧卡</h3>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">156</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e1')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e1')" title="蓝靛宝珠">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">蓝靛宝珠</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e1', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">始源之海</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="根源波动 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">根源</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="打雷 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">打雷</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="冰冻束 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">冰冻</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#f43f5e">Psychic</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#a855f7">Ghost</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">黑马蕾冠王</h3>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">222</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e2')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e2')" title="气势披带">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">气势披带</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e2', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">人马一体</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="星碎 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">星碎</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="精神强念 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">精神</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="诡计 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">诡计</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#7dd3fc">Ice</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#a16207">Ground</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">猛犸</h3>
+<iconify-icon class="text-rose-400 text-xs" icon="mdi:gender-female"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">142</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e3')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e3')" title="命玉">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">命玉</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e3', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">厚脂肪</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="地震 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">地震</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="冰旋 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">冰旋</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="冰砾 (PP 30)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">冰砾</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#eab308">Electric</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#0ea5e9">Flying</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">闪电鸟</h3>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">167</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e4')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e4')" title="文柚果">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">文柚果</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e4', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">静电</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="十万伏特 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">十万</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="暴风 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">暴风</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="羽栖 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">羽栖</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="顺风 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">顺风</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#475569">Dark</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ec4899">Fairy</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">长毛巨魔</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">80</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e5')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e5')" title="光之黏土">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">光之黏土</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e5', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">恶作剧之心</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="灵魂冲击 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">灵魂</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="光墙 (PP 30)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">光墙</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="反射壁 (PP 30)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">反射</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="电磁波 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">电磁</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#22c55e">Grass</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ec4899">Fairy</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">风妖精</h3>
+<iconify-icon class="text-rose-400 text-xs" icon="mdi:gender-female"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">184</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e6')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e6')" title="腰带">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">腰带</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e6', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">恶作剧之心</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="能量球 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">能量</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="月亮之力 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">月亮</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="顺风 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">顺风</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="再来一次 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">再来</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- 底部操作提示 -->
+<footer class="h-10 px-10 glass-panel border-t border-white/5 flex items-center justify-between text-[11px] text-slate-500">
+<div class="flex gap-6 italic">
+<span>* 点击道具图标标记消耗状态</span>
+<span>* 点击异常图标切换(麻痹/灼伤/中毒/睡眠/冰冻)</span>
+<span>* 速度受顺风、空间及异常状态即时修正</span>
+</div>
+<div>VGC HELPER V4.2.0 - 2026.04.23</div>
+</footer>
+<script>
+        // 属性克制关系表 (攻击方属性 → 防御方属性 → 倍率)
+        const typeChart = {
+            'Normal': { 'Rock': 0.5, 'Ghost': 0, 'Steel': 0.5 },
+            'Fire': { 'Fire': 0.5, 'Water': 0.5, 'Grass': 2, 'Ice': 2, 'Bug': 2, 'Rock': 0.5, 'Dragon': 0.5, 'Steel': 2 },
+            'Water': { 'Fire': 2, 'Water': 0.5, 'Grass': 0.5, 'Ground': 2, 'Rock': 2, 'Dragon': 0.5 },
+            'Electric': { 'Water': 2, 'Electric': 0.5, 'Grass': 0.5, 'Ground': 0, 'Flying': 2, 'Dragon': 0.5 },
+            'Grass': { 'Fire': 0.5, 'Water': 2, 'Grass': 0.5, 'Poison': 0.5, 'Ground': 2, 'Flying': 0.5, 'Bug': 0.5, 'Rock': 2, 'Dragon': 0.5, 'Steel': 0.5 },
+            'Ice': { 'Fire': 0.5, 'Water': 0.5, 'Grass': 2, 'Ice': 0.5, 'Ground': 2, 'Flying': 2, 'Dragon': 2, 'Steel': 0.5 },
+            'Fighting': { 'Normal': 2, 'Ice': 2, 'Poison': 0.5, 'Flying': 0.5, 'Psychic': 0.5, 'Bug': 0.5, 'Rock': 2, 'Ghost': 0, 'Dark': 2, 'Steel': 2, 'Fairy': 0.5 },
+            'Poison': { 'Grass': 2, 'Poison': 0.5, 'Ground': 0.5, 'Rock': 0.5, 'Ghost': 0.5, 'Steel': 0, 'Fairy': 2 },
+            'Ground': { 'Fire': 2, 'Electric': 2, 'Poison': 2, 'Rock': 2, 'Bug': 0.5, 'Grass': 0.5, 'Flying': 0, 'Steel': 2 },
+            'Flying': { 'Electric': 0.5, 'Grass': 2, 'Fighting': 2, 'Bug': 2, 'Rock': 0.5, 'Steel': 0.5 },
+            'Psychic': { 'Fighting': 2, 'Poison': 2, 'Psychic': 0.5, 'Dark': 0, 'Steel': 0.5 },
+            'Bug': { 'Fire': 0.5, 'Grass': 2, 'Fighting': 0.5, 'Poison': 0.5, 'Flying': 0.5, 'Psychic': 2, 'Ghost': 0.5, 'Dark': 2, 'Steel': 0.5, 'Fairy': 0.5 },
+            'Rock': { 'Fire': 2, 'Ice': 2, 'Fighting': 0.5, 'Ground': 0.5, 'Flying': 2, 'Bug': 2, 'Steel': 0.5 },
+            'Ghost': { 'Normal': 0, 'Psychic': 2, 'Ghost': 2, 'Dark': 0.5 },
+            'Dragon': { 'Dragon': 2, 'Steel': 0.5, 'Fairy': 0 },
+            'Dark': { 'Fighting': 0.5, 'Psychic': 2, 'Ghost': 2, 'Dark': 0.5, 'Fairy': 0.5 },
+            'Steel': { 'Fire': 0.5, 'Water': 0.5, 'Electric': 0.5, 'Ice': 2, 'Rock': 2, 'Steel': 0.5, 'Fairy': 2 },
+            'Fairy': { 'Fire': 0.5, 'Fighting': 2, 'Poison': 0.5, 'Dragon': 2, 'Dark': 2, 'Steel': 0.5 },
+        };
+
+        function getWeaknesses(types) {
+            const allAttackTypes = Object.keys(typeChart);
+            const result = [];
+            allAttackTypes.forEach(attackType => {
+                let multiplier = 1;
+                types.forEach(defType => {
+                    const effect = typeChart[attackType]?.[defType];
+                    if (effect !== undefined) multiplier *= effect;
+                });
+                if (multiplier > 1) {
+                    result.push([attackType, multiplier]);
+                }
+            });
+            return result.sort((a, b) => b[1] - a[1]);
+        }
+
+        // ==================== 道具数据库 ====================
+        const ITEM_DATA = {
+            // 树果类
+            '文柚果':       { icon: 'sitrus-berry' },
+            '勿花果':       { icon: 'figy-berry' },
+            '异奇果':       { icon: 'wiki-berry' },
+            '乐芭果':       { icon: 'iapapa-berry' },
+            '芭亚果':       { icon: 'aguav-berry' },
+            '芒芒果':       { icon: 'mago-berry' },
+            '亚开果':       { icon: 'kee-berry' },
+            '香罗果':       { icon: 'maranga-berry' },
+            '榴石果':       { icon: 'rowap-berry' },
+            '棱瓜果':       { icon: 'jaboca-berry' },
+            '灯浆果':       { icon: 'lansat-berry' },
+            '星桃果':       { icon: 'starf-berry' },
+            '谜芝果':       { icon: 'enigma-berry' },
+            '雾莲果':       { icon: 'custap-berry' },
+            '释陀果':       { icon: 'lum-berry' },
+            '嘉珍果':       { icon: 'chilan-berry' },
+            '烛木果':       { icon: 'occa-berry' },
+            '福禄果':       { icon: 'passho-berry' },
+            '千香果':       { icon: 'wacan-berry' },
+            '罗子果':       { icon: 'rindo-berry' },
+            '扁樱果':       { icon: 'yache-berry' },
+            '草蚕果':       { icon: 'chople-berry' },
+            '佛柑果':       { icon: 'kebia-berry' },
+            '莓榴果':       { icon: 'shuca-berry' },
+            '刺耳果':       { icon: 'coba-berry' },
+            '霹霹果':       { icon: 'payapa-berry' },
+            '巧可果':       { icon: 'tanga-berry' },
+            '腰木果':       { icon: 'charti-berry' },
+            '莲蒲果':       { icon: 'haban-berry' },
+            '通通果':       { icon: 'colbur-berry' },
+            '玉虫果':       { icon: 'babiri-berry' },
+            '洛玫果':       { icon: 'roseli-berry' },
+            '沙鳞果':       { icon: 'liechi-berry' },
+            '龙火果':       { icon: 'petaya-berry' },
+            '枝荔果':       { icon: 'salac-berry' },
+            '龙睛果':       { icon: 'ganlon-berry' },
+            '杏仔果':       { icon: 'apicot-berry' },
+            // 讲究系列
+            '讲究围巾':     { icon: 'choice-scarf',       speedMul: 1.5 },
+            '讲究头带':     { icon: 'choice-band' },
+            '讲究眼镜':     { icon: 'choice-specs' },
+            // 属性增强道具
+            '神秘水滴':     { icon: 'mystic-water' },
+            '木炭':         { icon: 'charcoal' },
+            '奇迹种子':     { icon: 'miracle-seed' },
+            '磁铁':         { icon: 'magnet' },
+            '锐利鸟嘴':     { icon: 'sharp-beak' },
+            '毒针':         { icon: 'poison-barb' },
+            '柔软沙子':     { icon: 'soft-sand' },
+            '硬石头':       { icon: 'hard-stone' },
+            '银粉':         { icon: 'silver-powder' },
+            '诅咒之符':     { icon: 'spell-tag' },
+            '金属膜':       { icon: 'metal-coat' },
+            '不融冰':       { icon: 'never-melt-ice' },
+            '龙之牙':       { icon: 'dragon-fang' },
+            '黑色眼镜':     { icon: 'black-glasses' },
+            '弯曲的汤匙':   { icon: 'twisted-spoon' },
+            '丝绸围巾':     { icon: 'silk-scarf' },
+            '黑带':         { icon: 'black-belt' },
+            // 传说宝可梦专属道具
+            '蓝靛宝珠':     { icon: 'blue-orb' },
+            '朱红宝珠':     { icon: 'red-orb' },
+            '白金宝珠':     { icon: 'griseous-orb' },
+            '金刚宝珠':     { icon: 'adamant-orb' },
+            '白玉宝珠':     { icon: 'lustrous-orb' },
+            '心之水滴':     { icon: 'soul-dew' },
+            // 天气/场地延长道具
+            '炽热岩石':     { icon: 'heat-rock' },
+            '潮湿岩石':     { icon: 'damp-rock' },
+            '冰冷岩石':     { icon: 'icy-rock' },
+            '沙沙岩石':     { icon: 'smooth-rock' },
+            '大地膜':       { icon: 'terrain-extender' },
+            // 核心对战斗具
+            '生命玉':       { icon: 'life-orb' },
+            '气势披带':     { icon: 'focus-sash' },
+            '突击背心':     { icon: 'assault-vest' },
+            '吃剩的东西':   { icon: 'leftovers' },
+            '光之黏土':     { icon: 'light-clay' },
+            '弱点保险':     { icon: 'weakness-policy' },
+            '凸凸头盔':     { icon: 'rocky-helmet' },
+            '进化奇石':     { icon: 'eviolite' },
+            '达人带':       { icon: 'expert-belt' },
+            '气球':         { icon: 'air-balloon' },
+            '先制之爪':     { icon: 'quick-claw' },
+            '焦点镜':       { icon: 'scope-lens' },
+            '广角镜':       { icon: 'wide-lens' },
+            '对焦镜':       { icon: 'zoom-lens' },
+            '王者之证':     { icon: 'kings-rock' },
+            '锐利之爪':     { icon: 'razor-claw' },
+            '光粉':         { icon: 'bright-powder' },
+            '白色香草':     { icon: 'white-herb' },
+            '心灵香草':     { icon: 'mental-herb' },
+            '逃脱按键':     { icon: 'eject-button' },
+            '红牌':         { icon: 'red-card' },
+            '部位护具':     { icon: 'protective-pads' },
+            '防尘护目镜':   { icon: 'safety-goggles' },
+            // 速度影响道具（特殊）
+            '黑色铁球':     { icon: 'iron-ball',          speedMul: 0.5 },
+            '力量护踝':     { icon: 'power-anklet',       speedMul: 0.5 },
+            '力量负重':     { icon: 'power-bracer',       speedMul: 0.5 },
+            '力量束带':     { icon: 'power-belt',         speedMul: 0.5 },
+            '力量镜':       { icon: 'power-lens',         speedMul: 0.5 },
+            '力量头带':     { icon: 'power-band',         speedMul: 0.5 },
+            '力量护腕':     { icon: 'power-weight',       speedMul: 0.5 },
+            // Gen8-9 新道具（PokeAPI 精灵缺失，回退到精灵球）
+            '爽喉喷雾':     { icon: null },
+            '厚底靴':       { icon: null },
+            '密探斗篷':     { icon: null },
+            '清净坠饰':     { icon: null },
+            '老千骰子':     { icon: null },
+            '驱劲能量':     { icon: null },
+            '拳击手套':     { icon: null },
+            '万能伞':       { icon: null },
+            '模仿香草':     { icon: null },
+            '客房服务':     { icon: null },
+            '避难背包':     { icon: null },
+            '打空保险':     { icon: null },
+            '妖精之羽':     { icon: null },
+            '腐朽的剑':     { icon: null },
+            '腐朽的盾':     { icon: null },
+            // 别名（兼容旧数据）
+            '命玉':         { icon: 'life-orb',           alias: '生命玉' },
+            '腰带':         { icon: 'focus-sash',         alias: '气势披带' },
+        };
+
+        const ITEM_SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/';
+        const ITEM_FALLBACK = ITEM_SPRITE_BASE + 'poke-ball.png';
+
+        function getItemSprite(itemName) {
+            const data = ITEM_DATA[itemName];
+            if (data && data.icon) {
+                return ITEM_SPRITE_BASE + data.icon + '.png';
+            }
+            return ITEM_FALLBACK;
+        }
+
+        function getEffectiveSpeed(pk) {
+            let speed = pk.speed;
+            if (pk.item && !pk.itemUsed) {
+                const data = ITEM_DATA[pk.item];
+                if (data && data.speedMul) {
+                    speed *= data.speedMul;
+                }
+            }
+            if (pk.status === '麻痹') {
+                speed *= 0.5;
+            }
+            return Math.floor(speed);
+        }
+
+        // 初始化数据
+        const TYPES = {
+            'Normal':   { color: '#94a3b8', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/1.png' },
+            'Fighting': { color: '#ea580c', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/2.png' },
+            'Flying':   { color: '#81b9ef', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/3.png' },
+            'Poison':   { color: '#a855f7', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/4.png' },
+            'Ground':   { color: '#a16207', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/5.png' },
+            'Rock':     { color: '#afa981', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/6.png' },
+            'Bug':      { color: '#91a119', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/7.png' },
+            'Ghost':    { color: '#704170', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/8.png' },
+            'Steel':    { color: '#60a1b8', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/9.png' },
+            'Fire':     { color: '#ef4444', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/10.png' },
+            'Water':    { color: '#3b82f6', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/11.png' },
+            'Grass':    { color: '#22c55e', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/12.png' },
+            'Electric': { color: '#eab308', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/13.png' },
+            'Psychic':  { color: '#ef4179', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/14.png' },
+            'Ice':      { color: '#7dd3fc', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/15.png' },
+            'Dragon':   { color: '#6366f1', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/16.png' },
+            'Dark':     { color: '#50413f', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/17.png' },
+            'Fairy':    { color: '#ef70ef', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/18.png' }
+        };
+
+        let battleState = {
+            turn: 1,
+            weather: '晴朗',
+            terrain: '无',
+            sides: {
+                player: { tailwind: 0, screens: [] },
+                enemy: { tailwind: 0, screens: [] }
+            }
+        };
+
+        const INITIAL_PLAYER_TEAM = [
+            { id: 'p1', name: '待填写', level: 50, sex: 'none', types: ['Fairy', 'Steel'], hp: 100, speed: 220, item: '腐朽的剑', itemUsed: false, ability: '不挠之剑', status: 'none', moves: [{name:'巨兽斩', pp:8}, {name:'嬉闹', pp:10}, {name:'圣剑', pp:15}, {name:'守住', pp:10}] },
+            { id: 'p2', name: '待填写', level: 50, sex: 'male', types: ['Fire', 'Dark'], hp: 85, speed: 81, item: '勿花果', itemUsed: false, ability: '威吓', status: 'none', moves: [{name:'击掌奇袭', pp:10}, {name:'闪焰冲锋', pp:15}, {name:'抛下狠话', pp:20}, {name:'拍落', pp:20}] },
+            { id: 'p3', name: '待填写', level: 50, sex: 'female', types: ['Dragon', 'Ghost'], hp: 100, speed: 213, item: '生命玉', itemUsed: false, ability: '恒净之躯', status: 'none', moves: [{name:'龙箭', pp:10}, {name:'潜灵奇袭', pp:10}, {name:'飞身重压', pp:15}, {name:'守住', pp:10}] },
+            { id: 'p4', name: '待填写', level: 50, sex: 'male', types: ['Grass'], hp: 100, speed: 105, item: '突击背心', itemUsed: false, ability: '青草制造者', status: 'none', moves: [{name:'滑梯', pp:20}, {name:'拍落', pp:20}, {name:'十万马力', pp:10}, {name:'极速折返', pp:20}] },
+            { id: 'p5', name: '待填写', level: 50, sex: 'male', types: ['Water', 'Fighting'], hp: 100, speed: 163, item: '神秘水滴', itemUsed: false, ability: '无形拳', status: 'none', moves: [{name:'水流连打', pp:5}, {name:'近身战', pp:5}, {name:'水流喷射', pp:20}, {name:'看穿', pp:5}] },
+            { id: 'p6', name: '待填写', level: 50, sex: 'male', types: ['Electric', 'Flying'], hp: 100, speed: 179, item: '腰带', itemUsed: false, ability: '不服输', status: 'none', moves: [{name:'疯狂伏特', pp:15}, {name:'飞翔', pp:15}, {name:'蛮力', pp:5}, {name:'守住', pp:10}] },
+        ];
+
+        const INITIAL_ENEMY_TEAM = [
+            { id: 'e1', name: '待填写', level: 50, sex: 'none', types: ['Water'], hp: 100, speed: 156, item: '蓝靛宝珠', itemUsed: false, ability: '始源之海', status: 'none', moves: [{name:'根源波动', pp:10}, {name:'打雷', pp:10}, {name:'冰冻束', pp:10}, {name:'守住', pp:10}] },
+            { id: 'e2', name: '待填写', level: 50, sex: 'none', types: ['Psychic', 'Ghost'], hp: 100, speed: 222, item: '气势披带', itemUsed: false, ability: '人马一体', status: 'none', moves: [{name:'星碎', pp:5}, {name:'精神强念', pp:10}, {name:'诡计', pp:20}, {name:'守住', pp:10}] },
+            { id: 'e3', name: '待填写', level: 50, sex: 'female', types: ['Ice', 'Ground'], hp: 100, speed: 142, item: '命玉', itemUsed: false, ability: '厚脂肪', status: 'none', moves: [{name:'地震', pp:10}, {name:'冰旋', pp:15}, {name:'冰砾', pp:30}, {name:'守住', pp:10}] },
+            { id: 'e4', name: '待填写', level: 50, sex: 'none', types: ['Electric', 'Flying'], hp: 100, speed: 167, item: '文柚果', itemUsed: false, ability: '静电', status: 'none', moves: [{name:'十万伏特', pp:15}, {name:'暴风', pp:10}, {name:'羽栖', pp:10}, {name:'顺风', pp:15}] },
+            { id: 'e5', name: '待填写', level: 50, sex: 'male', types: ['Dark', 'Fairy'], hp: 100, speed: 80, item: '光之黏土', itemUsed: false, ability: '恶作剧之心', status: 'none', moves: [{name:'灵魂冲击', pp:15}, {name:'光墙', pp:30}, {name:'反射壁', pp:30}, {name:'电磁波', pp:20}] },
+            { id: 'e6', name: '待填写', level: 50, sex: 'female', types: ['Grass', 'Fairy'], hp: 100, speed: 184, item: '腰带', itemUsed: false, ability: '恶作剧之心', status: 'none', moves: [{name:'能量球', pp:10}, {name:'月亮之力', pp:15}, {name:'顺风', pp:15}, {name:'再来一次', pp:5}] },
+        ];
+
+        let playerTeam = JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM));
+        let enemyTeam = JSON.parse(JSON.stringify(INITIAL_ENEMY_TEAM));
+        let playerMode = 'detailed'; // 'detailed' or 'simple'
+        let enemyMode = 'detailed'; // 'detailed' or 'simple'
+
+        
+        // ====== 队伍方案 (Team Presets - v16 style) ======
+        const PRESET_COLORS = ['#3b82f6', '#f97316', '#a855f7', '#10b981', '#eab308', '#f43f5e', '#ec4899', '#06b6d4'];
+
+        // Load from localStorage or initialize with default
+        function initTeamSchemes() {
+            const saved = localStorage.getItem('pokemon_team_schemes_v2');
+            if (saved) {
+                try { return JSON.parse(saved); } catch(e) {}
+            }
+            return [
+                { id: 1, name: '方案 01: 雨天进攻组', color: '#3b82f6', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+                { id: 2, name: '方案 02: 晴天平衡组', color: '#f97316', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+                { id: 3, name: '方案 03: 空间受队组', color: '#a855f7', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+                { id: 4, name: '方案 04: 顺风快攻组', color: '#10b981', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+                { id: 5, name: '方案 05: 电场核心组', color: '#eab308', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+                { id: 6, name: '方案 06: 沙暴受控组', color: '#f43f5e', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) }
+            ];
+        }
+
+        function saveTeamSchemes() {
+            localStorage.setItem('pokemon_team_schemes_v2', JSON.stringify(teamSchemes));
+        }
+
+        let teamSchemes = initTeamSchemes();
+
+        function renderTeamSchemes() {
+            const list = document.getElementById('team-schemes-list');
+            if (!list) return;
+            list.innerHTML = teamSchemes.map(scheme => {
+                const members = scheme.team.map(m => m.name).filter(n => n && n !== '待填写').join(', ');
+                return '<div class="group relative bg-white/5 border border-white/5 rounded-lg p-2 hover:bg-white/10 transition-all">' +
+                    '<div class="flex items-center gap-2 mb-1">' +
+                        '<div class="w-2 h-2 rounded-full shrink-0" style="background-color: ' + scheme.color + '; box-shadow: 0 0 8px ' + scheme.color + '99"></div>' +
+                        '<input type="text" value="' + scheme.name.replace(/"/g, '&quot;') + '" ' +
+                            'class="bg-transparent border-none text-[11px] font-medium text-slate-300 focus:outline-none focus:text-blue-400 w-full" ' +
+                            'onchange="renameTeamScheme(' + scheme.id + ', this.value)" />' +
+                    '</div>' +
+                    (members ? '<div class="text-[9px] text-slate-500 truncate mb-1.5 ml-4">' + members + '</div>' : '') +
+                    '<div class="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">' +
+                        '<button onclick="selectTeam(' + scheme.id + ')" class="text-[9px] text-slate-400 hover:text-white px-2 py-0.5 bg-white/5 hover:bg-white/10 rounded transition-colors border border-white/10">使用</button>' +
+                        '<button onclick="saveToScheme(' + scheme.id + ')" class="text-[9px] text-blue-400 hover:text-blue-300 px-2 py-0.5 bg-blue-400/10 hover:bg-blue-400/20 rounded transition-colors border border-blue-400/20">保存到此</button>' +
+                        '<button onclick="deleteTeamScheme(' + scheme.id + ')" class="text-[9px] text-rose-400 hover:text-rose-300 px-2 py-0.5 bg-rose-400/10 hover:bg-rose-400/20 rounded transition-colors border border-rose-400/20">删除</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        // 新增队伍
+        function addTeamScheme() {
+            const nextId = teamSchemes.length > 0 ? Math.max(...teamSchemes.map(s => s.id)) + 1 : 1;
+            const color = PRESET_COLORS[(nextId - 1) % PRESET_COLORS.length];
+            teamSchemes.push({
+                id: nextId,
+                name: '方案 ' + nextId.toString().padStart(2, '0'),
+                color: color,
+                team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM))
+            });
+            saveTeamSchemes();
+            renderTeamSchemes();
+            // Scroll to bottom
+            const list = document.getElementById('team-schemes-list');
+            if (list) setTimeout(() => list.scrollTop = list.scrollHeight, 50);
+        }
+
+        // 重命名（实时响应）
+        function renameTeamScheme(id, newName) {
+            const scheme = teamSchemes.find(s => s.id === id);
+            if (scheme) {
+                scheme.name = newName.trim() || scheme.name;
+                saveTeamSchemes();
+            }
+        }
+
+        // 使用方案（加载到当前我方队伍）
+        function selectTeam(id) {
+            const scheme = teamSchemes.find(s => s.id === id);
+            if (scheme) {
+                playerTeam = JSON.parse(JSON.stringify(scheme.team));
+                renderTeams();
+            }
+            document.getElementById('team-popup').classList.add('hidden');
+        }
+
+        // 保存当前队伍到指定方案
+        function saveToScheme(id) {
+            const scheme = teamSchemes.find(s => s.id === id);
+            if (scheme) {
+                scheme.team = JSON.parse(JSON.stringify(playerTeam));
+                saveTeamSchemes();
+                renderTeamSchemes();
+            }
+        }
+
+        // 删除方案
+        function deleteTeamScheme(id) {
+            if (teamSchemes.length <= 1) {
+                alert('至少保留一个队伍方案。');
+                return;
+            }
+            const scheme = teamSchemes.find(s => s.id === id);
+            if (scheme) {
+                teamSchemes = teamSchemes.filter(s => s.id !== id);
+                saveTeamSchemes();
+                renderTeamSchemes();
+            }
+        }
+
+        // 保存当前队伍（弹出选择方案对话框）
+        function saveCurrentPreset() {
+            const list = teamSchemes.map((s, i) => (i + 1) + '. ' + s.name).join('\n');
+            const input = prompt('选择要保存到的方案（输入编号）：\n' + list + '\n\n或输入 "0" 新建方案');
+            if (!input) return;
+            const num = parseInt(input);
+            if (num === 0) {
+                addTeamScheme();
+                const last = teamSchemes[teamSchemes.length - 1];
+                if (last) {
+                    last.team = JSON.parse(JSON.stringify(playerTeam));
+                    saveTeamSchemes();
+                    renderTeamSchemes();
+                }
+            } else if (num >= 1 && num <= teamSchemes.length) {
+                const scheme = teamSchemes[num - 1];
+                scheme.team = JSON.parse(JSON.stringify(playerTeam));
+                saveTeamSchemes();
+                renderTeamSchemes();
+                alert('已保存到「' + scheme.name + '」');
+            } else {
+                alert('无效的编号');
+            }
+        }
+
+        function toggleTeamPopup() {
+            const popup = document.getElementById('team-popup');
+            const modePopup = document.getElementById('mode-popup');
+            if (modePopup) modePopup.classList.add('hidden');
+            popup.classList.toggle('hidden');
+            if (!popup.classList.contains('hidden')) renderTeamSchemes();
+        }
+
+        // ====== 模式切换 (Mode Switch) ======
+        function toggleModePopup() {
+            const popup = document.getElementById('mode-popup');
+            const teamPopup = document.getElementById('team-popup');
+            if (teamPopup) teamPopup.classList.add('hidden');
+            popup.classList.toggle('hidden');
+        }
+
+        function triggerScreenshotMode() {
+            document.getElementById('screenshot-input').click();
+            document.getElementById('mode-popup').classList.add('hidden');
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                console.log('Uploaded screenshot:', file.name);
+                alert('截图已上传: ' + file.name + '\n\n(OCR解析功能待实现，当前仅支持上传保存)');
+            }
+            document.getElementById('mode-popup').classList.add('hidden');
+            event.target.value = '';
+        }
+
+        function setManualMode() {
+            document.getElementById('mode-popup').classList.add('hidden');
+            console.log('Switched to Manual Mode');
+        }
+
+        // ====== 点击外部关闭弹窗 ======
+        window.addEventListener('click', function(e) {
+            const teamPopup = document.getElementById('team-popup');
+            if (teamPopup && !teamPopup.classList.contains('hidden')) {
+                const teamBtn = teamPopup.parentElement.querySelector('button');
+                if (!teamPopup.contains(e.target) && !teamBtn.contains(e.target)) {
+                    teamPopup.classList.add('hidden');
+                }
+            }
+            const modePopup = document.getElementById('mode-popup');
+            if (modePopup && !modePopup.classList.contains('hidden')) {
+                const modeBtn = modePopup.parentElement.querySelector('button');
+                if (!modePopup.contains(e.target) && !modeBtn.contains(e.target)) {
+                    modePopup.classList.add('hidden');
+                }
+            }
+        });
+
+
+function togglePlayerMode() {
+            playerMode = playerMode === 'detailed' ? 'simple' : 'detailed';
+            const btn = document.getElementById('player-mode-btn');
+            btn.innerHTML = `
+                <iconify-icon icon="mdi:settings-helper" class="text-blue-400 ${playerMode === 'simple' ? 'rotate-180' : ''} transition-transform duration-500"></iconify-icon>
+                <span class="text-[10px] text-blue-300 font-bold uppercase tracking-widest">${playerMode === 'detailed' ? '详细模式' : '粗略模式'}</span>
+            `;
+            renderTeams();
+        }
+
+        function toggleEnemyMode() {
+            enemyMode = enemyMode === 'detailed' ? 'simple' : 'detailed';
+            const btn = document.getElementById('enemy-mode-btn');
+            btn.innerHTML = `
+                <iconify-icon icon="mdi:settings-helper" class="text-rose-400 ${enemyMode === 'simple' ? 'rotate-180' : ''} transition-transform duration-500"></iconify-icon>
+                <span class="text-[10px] text-rose-300 font-bold uppercase tracking-widest">${enemyMode === 'detailed' ? '详细模式' : '粗略模式'}</span>
+            `;
+            renderTeams();
+        }
+
+        function renderTeams() {
+            const pContainer = document.getElementById('player-team');
+            const eContainer = document.getElementById('enemy-team');
+            
+            pContainer.innerHTML = playerTeam.map(pk => createPokemonCard(pk, 'blue', playerMode)).join('');
+            eContainer.innerHTML = enemyTeam.map(pk => createPokemonCard(pk, 'rose', enemyMode)).join('');
+            
+            updateSpeedRanking();
+            updateAnalysis();
+            updateBattleDisplay();
+            
+            syncToLocalStorage();
+        }
+        // 本地存储：用 localStorage 替代后端同步
+        function syncToLocalStorage() {
+            const syncData = {
+                battleState: battleState,
+                playerTeam: playerTeam,
+                enemyTeam: enemyTeam,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('pokemon_battle_sync', JSON.stringify(syncData));
+        }
+
+        function updateBattleDisplay() {
+            document.getElementById('turn-count').innerText = battleState.turn.toString().padStart(2, '0');
+            document.getElementById('weather-text').innerText = battleState.weather;
+            document.getElementById('terrain-text').innerText = battleState.terrain;
+            
+            const wIcon = document.getElementById('weather-icon');
+            if (battleState.weather === '晴朗') wIcon.setAttribute('icon', 'mdi:white-balance-sunny');
+            else if (battleState.weather === '雨天') wIcon.setAttribute('icon', 'mdi:weather-pouring');
+            else if (battleState.weather === '沙暴') wIcon.setAttribute('icon', 'mdi:weather-dust');
+            else wIcon.setAttribute('icon', 'mdi:weather-cloudy');
+
+            const tIcon = document.getElementById('terrain-icon');
+            if (battleState.terrain === '青草') tIcon.setAttribute('icon', 'mdi:grass');
+            else if (battleState.terrain === '电气') tIcon.setAttribute('icon', 'mdi:lightning-bolt');
+            else if (battleState.terrain === '薄雾') tIcon.setAttribute('icon', 'mdi:blur');
+            else tIcon.setAttribute('icon', 'mdi:land-plots');
+        }
+
+        function cycleWeather() {
+            const w = ['晴朗', '雨天', '沙暴', '冰雹', '无'];
+            let idx = w.indexOf(battleState.weather);
+            battleState.weather = w[(idx + 1) % w.length];
+            updateBattleDisplay();
+        }
+
+        function cycleTerrain() {
+            const t = ['无', '青草', '电气', '薄雾', '精神'];
+            let idx = t.indexOf(battleState.terrain);
+            battleState.terrain = t[(idx + 1) % t.length];
+            updateBattleDisplay();
+        }
+
+        function updateAnalysis() {
+            calculateTeamAnalysis(playerTeam, 'player-type-dist', 'player-weakness-analysis');
+            calculateTeamAnalysis(enemyTeam, 'enemy-type-dist', 'enemy-weakness-analysis');
+        }
+
+        function calculateTeamAnalysis(team, distId, weakId) {
+            const typeDist = {};
+            const weaknessMap = {};
+            const allAttackTypes = Object.keys(typeChart);
+
+            team.forEach(pk => {
+                pk.types.forEach(t => {
+                    typeDist[t] = (typeDist[t] || 0) + 1;
+                });
+                // 计算该宝可梦对每种攻击属性的弱点（计入抗性/免疫抵消）
+                const pokemonWeakTo = new Set();
+                allAttackTypes.forEach(attackType => {
+                    let multiplier = 1;
+                    pk.types.forEach(defType => {
+                        const effect = typeChart[attackType]?.[defType];
+                        if (effect !== undefined) multiplier *= effect;
+                    });
+                    if (multiplier > 1) {
+                        pokemonWeakTo.add(attackType);
+                    }
+                });
+                pokemonWeakTo.forEach(w => {
+                    weaknessMap[w] = (weaknessMap[w] || 0) + 1;
+                });
+            });
+
+            const distContainer = document.getElementById(distId);
+            distContainer.innerHTML = Object.entries(typeDist).map(([type, count]) => `
+                <div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+                <div class="w-1 h-1 rounded-full" style="background:${TYPES[type]?.color}"></div>
+                <span class="text-[9px] text-slate-300 font-bold">${typeNameMap[type] || type} <span class="text-slate-500">x</span>${count}</span>
+                </div>
+            `).join('');
+
+            const weakContainer = document.getElementById(weakId);
+            const sortedWeaknesses = Object.entries(weaknessMap)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            weakContainer.innerHTML = sortedWeaknesses.map(([w, count]) => `
+                <div class="flex flex-col items-center group">
+                <div class="relative">
+                <img class="w-[117px] h-[29px] object-contain" src="${TYPES[w]?.img}" alt="${typeNameMap[w] || w}" onerror="this.style.display='none'" />
+                <div class="absolute -top-1.5 -right-1.5 w-4 h-4 ${count >= 3 ? 'bg-rose-600' : 'bg-slate-700'} rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">${count}</div>
+                </div>
+                </div>
+            `).join('');
+        }
+        
+        // 新增函数：获取宝可梦图片地址（优先高清艺术图，否则使用官方标准图）
+// 中文名 -> 官方高清图片 URL 映射（完整名单，包含真实图片+默认精灵球）
+const pokemonImageMap = {
+    // ========== 基础形态（含地区形态）==========
+    '妙蛙花': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/3.png',
+    '喷火龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png',
+    '水箭龟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png',
+    '大针蜂': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/15.png',
+    '大比鸟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/18.png',
+    '阿柏怪': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/24.png',
+    '皮卡丘': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png',
+    '雷丘（关都）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png',
+    '雷丘（阿罗拉）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10100.png',
+    '皮可西': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/36.png',
+    '九尾（关都）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/38.png',
+    '九尾（阿罗拉）': 'https://media.52poke.com/wiki/thumb/2/26/038Ninetales-Alola.png/480px-038Ninetales-Alola.png',
+    '风速狗（关都）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/59.png',
+    '风速狗（洗翠）': 'https://media.52poke.com/wiki/6/63/059Arcanine-Hisui.png',
+    '胡地': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/65.png',
+    '怪力': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/68.png',
+    '大食花': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/71.png',
+    '呆壳兽（关都）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/80.png',
+    '呆壳兽（伽勒尔）': 'https://media.52poke.com/wiki/thumb/8/8b/080Slowbro-Galar.png/480px-080Slowbro-Galar.png',
+    '耿鬼': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png',
+    '袋兽': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/115.png',
+    '宝石海星': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/121.png',
+    '凯罗斯': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/127.png',
+    '肯泰罗（关都）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/128.png',
+    '肯泰罗（帕底亚-斗战种）': 'https://media.52poke.com/wiki/e/e6/128Tauros-Combat.png',
+    '肯泰罗（帕底亚-火炽种）': 'https://media.52poke.com/wiki/6/68/128Tauros-Blaze.png',
+    '肯泰罗（帕底亚-水澜种）': 'https://media.52poke.com/wiki/4/44/128Tauros-Aqua.png',
+    '暴鲤龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/130.png',
+    '百变怪': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/132.png',
+    '水伊布': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/134.png',
+    '雷伊布': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/135.png',
+    '火伊布': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/136.png',
+    '化石翼龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/142.png',
+    '卡比兽': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png',
+    '快龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png',
+    '大竺葵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/154.png',
+    '火暴兽（城都）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/157.png',
+    '火暴兽（洗翠）': 'https://media.52poke.com/wiki/thumb/b/b7/157Typhlosion-Hisui.png/480px-157Typhlosion-Hisui.png',
+    '大力鳄': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/160.png',
+    '阿利多斯': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/168.png',
+    '电龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/181.png',
+    '玛力露丽': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/184.png',
+    '蚊香蛙皇': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/186.png',
+    '太阳伊布': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/196.png',
+    '月亮伊布': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/197.png',
+    '呆呆王（关都）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/199.png',
+    '呆呆王（伽勒尔）': 'https://media.52poke.com/wiki/thumb/c/ca/199Slowking-Galar.png/480px-199Slowking-Galar.png',
+    '佛烈托斯': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/205.png',
+    '大钢蛇': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/208.png',
+    '巨钳螳螂': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/212.png',
+    '赫拉克罗斯': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/214.png',
+    '盔甲鸟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/227.png',
+    '黑鲁加': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/229.png',
+    '班基拉斯': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/248.png',
+    '大嘴鸥': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/279.png',
+    '沙奈朵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/282.png',
+    '勾魂眼': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/302.png',
+    '波士可多拉': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/306.png',
+    '恰雷姆': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/308.png',
+    '雷电兽': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/310.png',
+    '巨牙鲨': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/319.png',
+    '喷火驼': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/323.png',
+    '煤炭龟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/324.png',
+    '七夕青鸟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/334.png',
+    '美纳斯': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/350.png',
+    '飘浮泡泡': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/351.png',
+    '诅咒娃娃': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/353.png',
+    '风铃铃': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/358.png',
+    '阿勃梭鲁': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/359.png',
+    '冰鬼护': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/362.png',
+    '土台龟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/389.png',
+    '烈焰猴': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/392.png',
+    '帝王拿波': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/395.png',
+    '伦琴猫': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/405.png',
+    '罗丝雷朵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/407.png',
+    '战槌龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/409.png',
+    '护城龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/411.png',
+    '长耳兔': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/428.png',
+    '花岩怪': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/442.png',
+    '烈咬陆鲨': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/445.png',
+    '路卡利欧': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png',
+    '河马兽': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/450.png',
+    '毒骷蛙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/454.png',
+    '暴雪王': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/460.png',
+    '玛狃拉': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/461.png',
+    '超甲狂犀': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/464.png',
+    '叶伊布': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/470.png',
+    '冰伊布': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/471.png',
+    '天蝎王': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/472.png',
+    '象牙猪': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/473.png',
+    '艾路雷朵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/475.png',
+    '雪妖女': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/478.png',
+    '洛托姆': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/479.png',
+    '洛托姆（加热形态）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10008.png',
+    '洛托姆（清洗形态）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10009.png',
+    '洛托姆（结冰形态）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10010.png',
+    '洛托姆（旋转形态）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10011.png',
+    '洛托姆（切割形态）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10012.png',
+    '君主蛇': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/497.png',
+    '炎武王': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/500.png',
+    '大剑鬼（合众）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/503.png',
+    '大剑鬼（洗翠）': 'https://media.52poke.com/wiki/thumb/3/39/503Samurott-Hisui.png/480px-503Samurott-Hisui.png',
+    '步哨鼠': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/505.png',
+    '酷豹': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/510.png',
+    '花椰猿': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/512.png',
+    '爆香猿': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/514.png',
+    '冷水猿': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/516.png',
+    '龙头地鼠': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/530.png',
+    '差不多娃娃': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/531.png',
+    '修建老匠': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/534.png',
+    '风妖精': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/547.png',
+    '流氓鳄': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/553.png',
+    '死神棺': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/563.png',
+    '灰尘山': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/569.png',
+    '索罗亚克（合众）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/571.png',
+    '索罗亚克（洗翠）': 'https://media.52poke.com/wiki/thumb/d/d3/571Zoroark-Hisui.png/480px-571Zoroark-Hisui.png',
+    '人造细胞卵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/579.png',
+    '双倍多多冰': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/584.png',
+    '电飞鼠': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/587.png',
+    '水晶灯火灵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/609.png',
+    '冻原熊': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/614.png',
+    '泥巴鱼（合众）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/618.png',
+    '泥巴鱼（伽勒尔）': 'https://media.52poke.com/wiki/1/11/618Stunfisk-Galar.png',
+    '泥偶巨人': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/623.png',
+    '三首恶龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/635.png',
+    '火神蛾': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/637.png',
+    '布里卡隆': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/652.png',
+    '妖火红狐': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/655.png',
+    '甲贺忍蛙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/658.png',
+    '掘地兔': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/660.png',
+    '烈箭鹰': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/663.png',
+    '彩粉蝶': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/666.png',
+    '花蓓蓓': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/669.png',
+    '花洁夫人': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/671.png',
+    '流氓熊猫': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/675.png',
+    '多丽米亚': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/676.png',
+    '妙喵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/677.png',
+    '坚盾剑怪': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/681.png',
+    '芳香精': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/683.png',
+    '胖甜妮': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/685.png',
+    '钢炮臂虾': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/693.png',
+    '光电伞蜥': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/695.png',
+    '怪颚龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/697.png',
+    '冰雪龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/698.png',
+    '仙子伊布': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/700.png',
+    '摔角鹰人': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/701.png',
+    '咚咚鼠': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/702.png',
+    '黏美龙（卡洛斯）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/706.png',
+    '黏美龙（洗翠）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10242.png',
+    '钥圈儿': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/707.png',
+    '朽木妖': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/709.png',
+    '南瓜怪人': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/711.png',
+    '冰岩怪（卡洛斯）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/713.png',
+    '冰岩怪（洗翠）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10243.png',
+    '音波龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/715.png',
+    '狙射树枭（阿罗拉）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/724.png',
+    '狙射树枭（洗翠）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10244.png',
+    '炽焰咆哮虎': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/727.png',
+    '西狮海壬': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/730.png',
+    '铳嘴大鸟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/733.png',
+    '好胜毛蟹': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/740.png',
+    '鬃岩狼人': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/745.png',
+    '超坏星': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/748.png',
+    '重泥挽马': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/750.png',
+    '滴蛛霸': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/752.png',
+    '焰后蜥': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/758.png',
+    '甜冷美后': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/763.png',
+    '智挥猩': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/765.png',
+    '投掷猴': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/766.png',
+    '谜拟丘': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/778.png',
+    '老翁龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/780.png',
+    '杖尾鳞甲龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/784.png',
+    '钢铠鸦': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/823.png',
+    '苹裹龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/841.png',
+    '丰蜜龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/842.png',
+    '沙螺蟒': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/844.png',
+    '怖思壶': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/855.png',
+    '布莉姆温': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/858.png',
+    '踏冰人偶': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/866.png',
+    '死神板': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/867.png',
+    '霜奶仙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/869.png',
+    '莫鲁贝可': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/877.png',
+    '多龙巴鲁托': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/887.png',
+    '诡角鹿': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/899.png',
+    '劈斧螳螂': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/900.png',
+    '幽尾玄鱼': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/902.png',
+    '大狃拉': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/903.png',
+    '魔幻假面喵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/908.png',
+    '骨纹巨声鳄': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/911.png',
+    '狂欢浪舞鸭': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/914.png',
+    '一家鼠': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/925.png',
+    '盐石巨灵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/933.png',
+    '红莲铠骑': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/936.png',
+    '苍炎刃鬼': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/937.png',
+    '电肚蛙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/939.png',
+    '狠辣椒': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/952.png',
+    '超能艳鸵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/956.png',
+    '巨锻匠': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/958.png',
+    '海豚侠': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/964.png',
+    '拖拖蚓': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/968.png',
+    '晶光花': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/969.png',
+    '奇麒麟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/981.png',
+    '仆刀将军': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/983.png',
+    '厄诡椪': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1017.png',
+    '铝钢桥龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1018.png',
+    '蜜集大蛇': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1019.png',
+
+    // ========== 超级进化形态（部分已知编号）==========
+    '超级妙蛙花': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10033.png',
+    '超级喷火龙 X': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png',
+    '超级喷火龙 Y': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10035.png',
+    '超级水箭龟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10036.png',
+    '超级大针蜂': 'https://media.52poke.com/wiki/thumb/7/76/015Beedrill-Mega.png/480px-015Beedrill-Mega.png',
+    '超级大比鸟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10073.png',
+    '超级皮可西': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10278.png',
+    '超级胡地': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10037.png',
+    '超级大食花': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10279.png',
+    '超级呆壳兽': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10071.png',
+    '超级耿鬼': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10038.png',
+    '超级袋兽': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10039.png',
+    '超级宝石海星': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10280.png',
+    '超级凯罗斯': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10040.png',
+    '超级暴鲤龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10041.png',
+    '超级化石翼龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10042.png',
+    '超级快龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10281.png',
+    '超级大竺葵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10282.png',
+    '超级大力鳄': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10283.png',
+    '超级电龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10045.png',
+    '超级大钢蛇': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10072.png',
+    '超级巨钳螳螂': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10046.png',
+    '超级赫拉克罗斯': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10047.png',
+    '超级盔甲鸟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10284.png',
+    '超级黑鲁加': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10048.png',
+    '超级班基拉斯': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10049.png',
+    '超级沙奈朵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10051.png',
+    '超级勾魂眼': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10066.png',
+    '超级波士可多拉': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10053.png',
+    '超级恰雷姆': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10054.png',
+    '超级雷电兽': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10055.png',
+    '超级巨牙鲨': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10070.png',
+    '超级喷火驼': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10087.png',
+    '超级七夕青鸟': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10067.png',
+    '超级诅咒娃娃': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10056.png',
+    '超级风铃铃': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10306.png',
+    '超级阿勃梭鲁': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10057.png',
+    '超级冰鬼护': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10074.png',
+    '超级长耳兔': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10088.png',
+    '超级烈咬陆鲨': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10058.png',
+    '超级路卡利欧': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10059.png',
+    '超级暴雪王': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10060.png',
+    '超级艾路雷朵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10068.png',
+    '超级雪妖女': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10285.png',
+    '超级炎武王': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10286.png',
+    '超级龙头地鼠': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10287.png',
+    '超级差不多娃娃': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10069.png',
+    '超级水晶灯火灵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10291.png',
+    '超级泥偶巨人': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10313.png',
+    '超级布里卡隆': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10292.png',
+    '超级妖火红狐': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10293.png',
+    '超级甲贺忍蛙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10294.png',
+    '超级花叶蒂': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10296.png',
+    '超级妙喵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10314.png',
+    '超级摔角鹰人': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10300.png',
+    '超级好胜毛蟹': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10315.png',
+    '超级老翁龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10302.png',
+    '超级狠辣椒': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10320.png',
+    '超级晶光花': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10321.png',
+};
+
+// 获取宝可梦头像 URL（若找不到映射则使用默认精灵球）
+function getPokemonImageUrl(pokemonName) {
+    if (pokemonImageMap[pokemonName]) {
+        return pokemonImageMap[pokemonName];
+    }
+    console.warn(`未找到图片映射: ${pokemonName}，使用默认图标`);
+    return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+}
+
+// 获取宝可梦头像 URL
+function getPokemonImageUrl(pokemonName) {
+    // 先从映射表中查找
+    if (pokemonImageMap[pokemonName]) {
+        return pokemonImageMap[pokemonName];
+    }
+    // 若找不到，则使用默认精灵球图标
+    console.warn(`未找到图片映射: ${pokemonName}，使用默认图标`);
+    return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
+}
+
+function createPokemonCard(pk, color, mode) {
+    const hpClass = pk.hp > 50 ? 'hp-gradient-high' : (pk.hp > 20 ? 'hp-gradient-mid' : 'hp-gradient-low');
+    const isSimple = (mode === 'simple');
+    
+    // 粗略模式
+    if (isSimple) {
+        const weaknesses = getWeaknesses(pk.types);
+        return `
+            <div class="glass-panel rounded-xl p-2 border-l-[4px] border-${color}-500 hover:bg-white/5 transition duration-300">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 shrink-0 relative overflow-hidden">
+                        <img src="${getPokemonImageUrl(pk.name)}" 
+                             alt="${pk.name}" 
+                             class="w-full h-full object-cover"
+                             onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png';">
+                        <div class="absolute -bottom-1 -right-1 bg-slate-900/90 px-1 text-[8px] font-bold text-slate-400 rounded">L${pk.level}</div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center mb-1">
+                            <div class="flex items-center gap-2">
+                                <input type="text" list="global-pokemon-list" value="${pk.name}" data-id="${pk.id}" data-side="${color}" class="font-bold text-base bg-transparent border border-white/20 rounded px-1 py-0 w-28 truncate focus:outline-none focus:border-amber-500" onchange="handlePokemonNameChange(this, '${pk.id}', '${color}')">
+                                <div class="flex gap-0.5">
+                                    ${pk.types.map(t => `<div class="w-2 h-2 rounded-full" style="background:${TYPES[t]?.color}" title="${t}"></div>`).join('')}
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex gap-2">
+                                    ${weaknesses.map(([t, m]) => `
+                                        <div class="flex flex-col items-center leading-none">
+                                            <span class="text-[14px] text-slate-500 font-bold">${typeNameMap[t] || t}</span>
+                                            <span class="text-2xl font-black ${m === 4 ? 'text-rose-500 drop-shadow-[0_0_5px_rgba(244,63,94,0.5)]' : 'text-amber-400'}">${m}x</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="flex items-center gap-1 border-l border-white/10 pl-2">
+                                    <span class="text-[10px] font-header font-bold text-amber-500 bg-amber-500/10 px-1 rounded">S:${pk.speed}</span>
+                                    <button onclick="toggleStatus('${pk.id}')" class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded border border-white/5">
+                                        <iconify-icon icon="${pk.status === 'none' ? 'mdi:emoticon-happy-outline' : 'mdi:alert-circle'}" class="text-xs ${pk.status === 'none' ? 'text-slate-500' : 'text-amber-400'}"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="h-2 flex-1 bg-slate-900 rounded-full overflow-hidden border border-white/5">
+                                <div class="h-full ${hpClass} transition-all duration-500" style="width: ${pk.hp}%"></div>
+                            </div>
+                            <span class="font-mono text-[10px] font-bold ${pk.hp > 20 ? 'text-slate-400' : 'text-rose-500'} w-8 text-right">${pk.hp}%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="${pk.hp}" oninput="updateHP('${pk.id}', this.value)" class="w-full h-1 mt-1 accent-${color}-500">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 详细模式（属性标签已修复）
+    return `
+        <div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-${color}-500 hover:bg-white/5 transition duration-300">
+            <div class="flex gap-3">
+                <!-- 左侧头像 + 属性标签 -->
+                <div class="flex flex-col items-center w-14 shrink-0">
+                    <div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1 overflow-hidden">
+                        <img src="${getPokemonImageUrl(pk.name)}" 
+                             alt="${pk.name}" 
+                             class="w-full h-full object-cover"
+                             onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png';">
+                        <div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv${pk.level}</div>
+                    </div>
+                    <!-- 属性标签（中文显示） -->
+                    <div class="flex flex-col w-full gap-0.5">
+                        ${pk.types.map(t => `<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:${TYPES[t]?.color}">${typeNameMap[t] || t}</div>`).join('')}
+                    </div>
+                </div>
+                
+                <!-- 右侧主信息 -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <input type="text" list="global-pokemon-list" value="${pk.name}" data-id="${pk.id}" data-side="${color}" class="font-bold text-base bg-transparent border border-white/20 rounded px-1 py-0 w-28 truncate focus:outline-none focus:border-amber-500" onchange="handlePokemonNameChange(this, '${pk.id}', '${color}')">
+                            ${pk.sex === 'male' ? '<iconify-icon icon="mdi:gender-male" class="text-blue-400 text-xs"></iconify-icon>' : (pk.sex === 'female' ? '<iconify-icon icon="mdi:gender-female" class="text-rose-400 text-xs"></iconify-icon>' : '')}
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="text-right leading-none">
+                                <span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+                                <span class="text-[11px] font-header font-bold text-amber-500">${pk.speed}</span>
+                            </div>
+                            <button onclick="toggleStatus('${pk.id}')" class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition">
+                                <iconify-icon icon="${pk.status === 'none' ? 'mdi:check-circle-outline' : 'mdi:alert-circle-outline'}" class="${pk.status === 'none' ? 'text-green-500' : 'text-amber-500'}"></iconify-icon>
+                                <span class="${pk.status === 'none' ? 'text-slate-400' : 'text-amber-400'} font-bold uppercase">${pk.status === 'none' ? 'Normal' : pk.status}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- HP 区域 -->
+                    <div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+                        <div class="flex justify-between items-center text-[9px] mb-1">
+                            <div class="flex items-center gap-1.5">
+                                <iconify-icon icon="mdi:heart" class="${pk.hp > 20 ? 'text-green-500' : 'text-rose-500'}"></iconify-icon>
+                                <span class="font-header font-bold ${pk.hp > 20 ? 'text-slate-300' : 'text-rose-500'}">${pk.hp}%</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 ${pk.itemUsed ? 'opacity-30' : ''}" title="${pk.item || '点击选择道具'}">
+                                <img src="${getItemSprite(pk.item)}" class="w-5 h-5 object-contain cursor-pointer hover:opacity-80 transition" onclick="event.stopPropagation(); toggleItem('${pk.id}')" onerror="this.src='${ITEM_FALLBACK}'">
+                                <span class="text-[9px] text-slate-400 truncate w-16 text-right cursor-pointer hover:text-amber-400 transition" onclick="showItemSelector('${pk.id}')">${pk.item || '无道具'}</span>
+                            </div>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div class="h-full ${hpClass} transition-all duration-500" style="width: ${pk.hp}%"></div>
+                        </div>
+                        <input type="range" min="0" max="100" value="${pk.hp}" oninput="updateHP('${pk.id}', this.value)" class="w-full h-1 mt-1 accent-${color}-500 cursor-pointer">
+                    </div>
+
+                    <!-- 特性与招式 -->
+                    <div class="flex items-center gap-2">
+                        <div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+                            <iconify-icon icon="mdi:xml" class="text-[10px] text-blue-400"></iconify-icon>
+                            <span class="text-[9px] text-slate-300 truncate font-bold uppercase">${pk.ability}</span>
+                        </div>
+                        <div class="flex-1 grid grid-cols-4 gap-1">
+                            ${pk.moves.slice(0, 4).map(m => `
+                                <div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="${m.name} (PP ${m.pp})">
+                                    <span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">${m.name.substring(0,2)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+        // 当用户修改名称后调用
+async function handlePokemonNameChange(inputElement, pokemonId, side) {
+    const newName = inputElement.value.trim();
+    if (!newName) return;
+
+    let team = (side === 'blue') ? playerTeam : enemyTeam;
+    const pokemon = team.find(p => p.id === pokemonId);
+    if (!pokemon) return;
+
+    if (pokemon.name === newName) return;
+
+    // 本地查找宝可梦数据
+    const data = findPokemon(newName);
+    if (!data) {
+        alert(`未找到宝可梦 "${newName}"，请检查名称`);
+        inputElement.value = pokemon.name;
+        return;
+    }
+
+    pokemon.name = data.name;
+    pokemon.types = data.types;
+    pokemon.speed = data.baseStats.speed;
+    pokemon.ability = data.abilities[0] || '未知特性';
+    pokemon.level = 50;
+    pokemon.sex = getRandomSex(data.genderRatio);
+    pokemon.hp = 100;
+    pokemon.itemUsed = false;
+    pokemon.status = 'none';
+    if (data.learnableMoves && data.learnableMoves.length > 0) {
+        pokemon.moves = data.learnableMoves.slice(0, 4).map(m => ({ name: m, pp: 20 }));
+    } else {
+        pokemon.moves = [{ name: '拍击', pp: 20 }, { name: '叫声', pp: 20 }];
+    }
+
+    renderTeams();
+}
+
+// 辅助函数：根据性别比例随机性别（'male', 'female', 'none'）
+function getRandomSex(genderRatio) {
+    if (genderRatio === 'male') return 'male';
+    if (genderRatio === 'female') return 'female';
+    if (genderRatio === 'genderless') return 'none';
+    return Math.random() < 0.5 ? 'male' : 'female';
+}
+
+        function updateSpeedRanking() {
+            const container = document.getElementById('speed-ranking');
+            const allPokemon = [
+                ...playerTeam.map(p => ({...p, team: 'blue'})),
+                ...enemyTeam.map(e => ({...e, team: 'rose'}))
+            ];
+
+            // 排序（考虑道具和状态对速度的修正）
+            allPokemon.sort((a, b) => {
+                return getEffectiveSpeed(b) - getEffectiveSpeed(a);
+            });
+
+            // 渲染列表 (更紧凑的设计)
+            container.innerHTML = allPokemon.map((pk, index) => {
+                const effSpeed = getEffectiveSpeed(pk);
+                const speedNote = [];
+                if (pk.item && ITEM_DATA[pk.item]?.speedMul && !pk.itemUsed) {
+                    speedNote.push(pk.item);
+                }
+                if (pk.status === '麻痹') speedNote.push('麻痹');
+                return `
+                <div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md"
+                     style="order: ${index}">
+                    <div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        ${index + 1}
+                    </div>
+                    <div class="flex-1 flex items-center justify-between min-w-0">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <div class="w-0.5 h-4 bg-${pk.team}-500 rounded-full shrink-0"></div>
+                            <span class="font-bold text-xs truncate ${pk.team === 'blue' ? 'text-blue-400' : 'text-rose-400'}">${pk.name}</span>
+                            ${pk.status !== 'none' ? `<span class="px-1 bg-amber-500/10 text-amber-500 text-[7px] rounded shrink-0 border border-amber-500/20">${pk.status}</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <div class="text-right">
+                                <div class="text-[9px] font-header font-bold ${effSpeed !== pk.speed ? 'text-amber-400' : 'text-slate-200'} leading-none">${effSpeed}</div>
+                                ${speedNote.length > 0 ? `<div class="text-[7px] text-amber-500/70 leading-none">${speedNote.join('+')}</div>` : ''}
+                            </div>
+                            <div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+                                <iconify-icon icon="${pk.team === 'blue' ? 'mdi:shield-outline' : 'mdi:target'}" class="text-xs text-slate-500"></iconify-icon>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;}).join('');
+        }
+
+        // 交互逻辑
+        function updateHP(id, val) {
+            const pk = [...playerTeam, ...enemyTeam].find(p => p.id === id);
+            if (pk) {
+                pk.hp = parseInt(val);
+                renderTeams();
+            }
+        }
+
+        function toggleItem(id) {
+            const pk = [...playerTeam, ...enemyTeam].find(p => p.id === id);
+            if (pk) {
+                pk.itemUsed = !pk.itemUsed;
+                renderTeams();
+            }
+        }
+
+        // 道具分类（用于选择器tab）
+        const ITEM_CATEGORIES = {
+            '全部': Object.keys(ITEM_DATA).filter(k => !ITEM_DATA[k].alias),
+            '速度影响': ['讲究围巾','黑色铁球','力量护踝','力量负重','力量束带','力量镜','力量头带','力量护腕'],
+            '树果': ['文柚果','勿花果','异奇果','乐芭果','芭亚果','芒芒果','亚开果','香罗果','榴石果','棱瓜果','灯浆果','星桃果','谜芝果','雾莲果','释陀果','嘉珍果','烛木果','福禄果','千香果','罗子果','扁樱果','草蚕果','佛柑果','莓榴果','刺耳果','霹霹果','巧可果','腰木果','莲蒲果','通通果','玉虫果','洛玫果','沙鳞果','龙火果','枝荔果','龙睛果','杏仔果'],
+            '讲究': ['讲究围巾','讲究头带','讲究眼镜'],
+            '属性增强': ['神秘水滴','木炭','奇迹种子','磁铁','锐利鸟嘴','毒针','柔软沙子','硬石头','银粉','诅咒之符','金属膜','不融冰','龙之牙','黑色眼镜','弯曲的汤匙','丝绸围巾','黑带'],
+            '专属': ['蓝靛宝珠','朱红宝珠','白金宝珠','金刚宝珠','白玉宝珠','心之水滴','腐朽的剑','腐朽的盾','妖精之羽'],
+            '天气场地': ['炽热岩石','潮湿岩石','冰冷岩石','沙沙岩石','大地膜'],
+            '核心对战': ['生命玉','气势披带','突击背心','吃剩的东西','光之黏土','弱点保险','凸凸头盔','进化奇石','达人带','气球','先制之爪','焦点镜','广角镜','对焦镜','王者之证','锐利之爪','光粉','白色香草','心灵香草','逃脱按键','红牌','部位护具','防尘护目镜'],
+            'Gen8-9': ['爽喉喷雾','厚底靴','密探斗篷','清净坠饰','老千骰子','驱劲能量','拳击手套','万能伞','模仿香草','客房服务','避难背包','打空保险'],
+        };
+
+        let _itemSelectorTarget = null;
+
+        function showItemSelector(pokemonId) {
+            _itemSelectorTarget = pokemonId;
+            const existing = document.getElementById('item-selector-overlay');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'item-selector-overlay';
+            overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/60';
+            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+            overlay.innerHTML = `
+                <div class="glass-panel rounded-2xl p-4 w-[420px] max-h-[520px] flex flex-col border border-white/10 shadow-2xl" onclick="event.stopPropagation()">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-bold text-slate-200">选择道具</h3>
+                        <button onclick="document.getElementById('item-selector-overlay').remove()" class="text-slate-500 hover:text-white text-lg leading-none">&times;</button>
+                    </div>
+                    <input id="item-search-input" type="text" placeholder="搜索道具..." class="w-full bg-slate-800 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-200 mb-2 focus:outline-none focus:border-amber-500" oninput="filterItemGrid()">
+                    <div id="item-tabs" class="flex flex-wrap gap-1 mb-2">
+                        ${Object.keys(ITEM_CATEGORIES).map(cat =>
+                            `<button class="item-cat-tab px-2 py-0.5 text-[10px] rounded-full border border-white/10 text-slate-400 hover:text-white hover:border-white/30 transition ${cat === '全部' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : ''}" onclick="selectItemCat('${cat}')">${cat}</button>`
+                        ).join('')}
+                    </div>
+                    <div id="item-grid" class="grid grid-cols-4 gap-1.5 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                        ${renderItemGrid('全部')}
+                    </div>
+                    <button onclick="clearSelectedItem()" class="mt-2 w-full py-1.5 text-[10px] text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500/10 transition">清除道具</button>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+            setTimeout(() => document.getElementById('item-search-input')?.focus(), 100);
+        }
+
+        function renderItemGrid(category) {
+            const items = ITEM_CATEGORIES[category] || [];
+            return items.map(name => {
+                const data = ITEM_DATA[name];
+                const spriteUrl = getItemSprite(name);
+                const isSpeedItem = data.speedMul && data.speedMul !== 1;
+                return `
+                    <div class="item-option flex flex-col items-center gap-0.5 p-1.5 rounded-lg cursor-pointer hover:bg-white/10 transition border border-transparent hover:border-white/20" onclick="selectItem('${name}')" data-item-name="${name}">
+                        <img src="${spriteUrl}" class="w-7 h-7 object-contain" onerror="this.src='${ITEM_FALLBACK}'">
+                        <span class="text-[9px] text-slate-300 text-center leading-tight ${isSpeedItem ? 'text-amber-400' : ''}">${name}${isSpeedItem ? (data.speedMul > 1 ? ' ×' + data.speedMul : ' ÷2') : ''}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectItemCat(category) {
+            document.querySelectorAll('.item-cat-tab').forEach(btn => {
+                btn.classList.remove('bg-amber-500/20', 'text-amber-400', 'border-amber-500/40');
+            });
+            event.target.classList.add('bg-amber-500/20', 'text-amber-400', 'border-amber-500/40');
+            document.getElementById('item-grid').innerHTML = renderItemGrid(category);
+            document.getElementById('item-search-input').value = '';
+        }
+
+        function filterItemGrid() {
+            const query = document.getElementById('item-search-input').value.trim().toLowerCase();
+            document.querySelectorAll('#item-grid .item-option').forEach(el => {
+                const name = el.dataset.itemName || '';
+                el.style.display = (query === '' || name.includes(query)) ? '' : 'none';
+            });
+        }
+
+        function selectItem(itemName) {
+            if (!_itemSelectorTarget) return;
+            const pk = [...playerTeam, ...enemyTeam].find(p => p.id === _itemSelectorTarget);
+            if (pk) {
+                pk.item = itemName;
+                pk.itemUsed = false;
+                renderTeams();
+            }
+            const overlay = document.getElementById('item-selector-overlay');
+            if (overlay) overlay.remove();
+            _itemSelectorTarget = null;
+        }
+
+        function clearSelectedItem() {
+            if (!_itemSelectorTarget) return;
+            const pk = [...playerTeam, ...enemyTeam].find(p => p.id === _itemSelectorTarget);
+            if (pk) {
+                pk.item = '';
+                pk.itemUsed = false;
+                renderTeams();
+            }
+            const overlay = document.getElementById('item-selector-overlay');
+            if (overlay) overlay.remove();
+            _itemSelectorTarget = null;
+        }
+
+        function toggleStatus(id) {
+            const pk = [...playerTeam, ...enemyTeam].find(p => p.id === id);
+            if (pk) {
+                const states = ['none', '麻痹', '灼伤', '中毒', '睡眠', '冰冻'];
+                let idx = states.indexOf(pk.status);
+                pk.status = states[(idx + 1) % states.length];
+                renderTeams();
+            }
+        }
+
+        // 模拟计时器
+        let timeLeft = 15 * 60;
+        setInterval(() => {
+            if (timeLeft > 0) {
+                timeLeft--;
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                document.getElementById('timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+        }, 1000);
+
+
+        createDatalist();   // 初始化 datalist
+
+        // 初始化渲染
+        renderTeams();
+    </script>
+</body></html>

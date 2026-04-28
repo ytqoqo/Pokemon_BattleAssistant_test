@@ -1,0 +1,2053 @@
+<!DOCTYPE html>
+
+<html data-immersive-translate-page-theme="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VGC 2026 竞技场对战助手</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+SC:wght@300;400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #020617;
+            overflow: hidden;
+            width: 1920px;
+            height: 1080px;
+            margin: 0 auto;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .font-header {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hp-gradient-high { background: linear-gradient(90deg, #22c55e, #4ade80); }
+        .hp-gradient-mid { background: linear-gradient(90deg, #eab308, #fde047); }
+        .hp-gradient-low { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            height: 4px;
+            border-radius: 2px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .speed-rank-item {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 动画效果 */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+        }
+        .active-red { animation: pulse-red 2s infinite; }
+    </style>
+<style data-id="immersive-translate-input-injected-css"></style>
+</head>
+<body class="flex flex-col">
+<!-- 顶部状态栏 -->
+<header class="h-16 w-full glass-panel flex items-center justify-between px-6 border-b border-white/10 z-50 shrink-0">
+<!-- 左侧：队伍方案选择 -->
+<div class="flex items-center gap-4 w-[400px] relative">
+<button class="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/50 rounded-lg transition-all group" onclick="toggleTeamPopup()">
+<iconify-icon class="text-xl text-blue-400 group-hover:scale-110 transition-transform" icon="mdi:format-list-bulleted-type"></iconify-icon>
+<span class="text-sm font-bold tracking-widest text-blue-400">队伍方案</span>
+<iconify-icon class="text-blue-400/50 ml-1" icon="mdi:chevron-down"></iconify-icon>
+</button>
+<!-- 队伍方案小弹窗 -->
+<div class="hidden absolute top-full left-0 mt-3 w-80 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-4 z-[100] animate-in fade-in slide-in-from-top-2 duration-200" id="team-popup">
+<div class="flex items-center justify-between mb-4 px-1">
+<div class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold">队伍方案管理</div>
+<button class="text-[10px] bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 px-2 py-1 rounded border border-blue-500/30 transition-colors flex items-center gap-1" onclick="addTeamScheme()">
+<iconify-icon icon="mdi:plus"></iconify-icon> 新增队伍
+            </button>
+</div>
+<div class="grid grid-cols-1 gap-2 max-h-[480px] overflow-y-auto custom-scrollbar" id="team-schemes-list">
+<!-- 由 JavaScript 动态渲染 -->
+</div>
+</div>
+</div>
+
+<!-- 中间：核心对战信息面板 -->
+<div class="flex flex-1 justify-center">
+<div class="bg-white/5 border border-white/10 rounded-lg px-6 py-1 flex items-center gap-8 shadow-inner">
+<div class="text-center">
+<div class="text-[9px] text-slate-500 uppercase mb-0">Turn</div>
+<div class="text-xl font-header font-bold text-amber-500" id="turn-count">01</div>
+</div>
+<div class="h-6 w-px bg-white/10"></div>
+<div class="flex flex-col items-center min-w-[80px] cursor-pointer" onclick="cycleWeather()">
+<div class="text-[9px] text-slate-500 uppercase">Weather</div>
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-amber-400 text-base" icon="mdi:white-balance-sunny" id="weather-icon"></iconify-icon>
+<span class="text-xs font-bold" id="weather-text">晴朗</span>
+</div>
+</div>
+<div class="h-8 w-px bg-white/20"></div>
+<div class="text-center">
+<div class="text-2xl font-header font-bold text-white tracking-tighter" id="timer">10:03</div>
+<div class="text-[8px] text-slate-500 tracking-widest uppercase">MATCH TIME • 2026-04-28</div>
+</div>
+<div class="h-8 w-px bg-white/20"></div>
+<div class="flex flex-col items-center min-w-[80px] cursor-pointer" onclick="cycleTerrain()">
+<div class="text-[9px] text-slate-500 uppercase">Terrain</div>
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-blue-400 text-base" icon="mdi:land-plots" id="terrain-icon"></iconify-icon>
+<span class="text-xs font-bold" id="terrain-text">无</span>
+</div>
+</div>
+<div class="h-6 w-px bg-white/10"></div>
+<div class="text-center">
+<div class="text-[9px] text-slate-500 uppercase">Status</div>
+<div class="flex items-center gap-1">
+<div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+<span class="text-[9px] font-bold text-green-500 uppercase">Live</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 右侧：模式切换 -->
+<div class="flex items-center justify-end gap-4 w-[400px] relative">
+<button class="flex items-center gap-2 px-4 py-2 bg-rose-600/20 hover:bg-rose-600/40 border border-rose-500/50 rounded-lg transition-all group" onclick="toggleModePopup()">
+<iconify-icon class="text-xl text-rose-400 group-hover:rotate-180 transition-transform duration-500" icon="mdi:swap-horizontal"></iconify-icon>
+<span class="text-sm font-bold tracking-widest text-rose-400">切换模式</span>
+<iconify-icon class="text-rose-400/50 ml-1" icon="mdi:chevron-down"></iconify-icon>
+</button>
+<!-- 模式选择小弹窗 -->
+<div class="hidden absolute top-full right-0 mt-3 w-48 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200" id="mode-popup">
+<div class="flex flex-col gap-1">
+<button class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-rose-500/10 text-slate-300 hover:text-rose-400 transition-colors text-left group" onclick="triggerScreenshotMode()">
+<iconify-icon class="text-lg group-hover:scale-110 transition-transform" icon="mdi:camera"></iconify-icon>
+<span class="text-xs font-bold uppercase tracking-wider">截图模式</span>
+</button>
+<div class="h-px bg-white/5 mx-2 my-1"></div>
+<button class="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-blue-500/10 text-slate-300 hover:text-blue-400 transition-colors text-left group" onclick="setManualMode()">
+<iconify-icon class="text-lg group-hover:scale-110 transition-transform" icon="mdi:cursor-default-click"></iconify-icon>
+<span class="text-xs font-bold uppercase tracking-wider">手动模式</span>
+</button>
+</div>
+</div>
+<!-- 隐藏的文件上传 -->
+<input accept="image/*" class="hidden" id="screenshot-input" onchange="handleFileUpload(event)" type="file"/>
+<div class="h-8 w-px bg-white/10 mx-1"></div>
+<div class="flex items-center gap-3">
+<button class="w-8 h-8 flex items-center justify-center bg-white/5 border border-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition" onclick="location.reload()">
+<iconify-icon class="text-lg" icon="mdi:refresh"></iconify-icon>
+</button>
+</div>
+</div>
+</header>
+<!-- 主体对战区 -->
+<main class="flex-1 flex overflow-hidden p-3 gap-3">
+<!-- 左侧：我方区域 (Player Zone) -->
+<section class="w-[600px] flex flex-col gap-3">
+<!-- 队伍列表 -->
+<div class="flex-1 flex flex-col min-h-0 bg-white/[0.02] rounded-2xl border border-white/5 p-3">
+<div class="flex items-center justify-between mb-2 px-2">
+<div class="flex items-center gap-2">
+<iconify-icon class="text-blue-500 text-lg" icon="mdi:shield-check"></iconify-icon>
+<h2 class="font-bold text-slate-300 tracking-wider uppercase text-xs">我方队伍 (TEAM BLUE)</h2>
+</div>
+<button class="flex items-center gap-2 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 transition group" id="player-mode-btn" onclick="togglePlayerMode()">
+<iconify-icon class="text-blue-400 text-sm group-hover:rotate-180 transition-transform duration-500" icon="mdi:settings-helper"></iconify-icon>
+<span class="text-[9px] text-blue-300 font-bold uppercase tracking-widest">详细模式</span>
+</button>
+</div>
+<div class="grid grid-cols-1 gap-2 flex-1 overflow-y-auto custom-scrollbar pr-1" id="player-team">
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ec4899">Fairy</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#94a3b8">Steel</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">苍响</h3>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">220</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p1')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p1')" title="腐朽的剑">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">腐朽的剑</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p1', this.value)" type="range" value="100">
+</input></div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">不挠之剑</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="巨兽斩 (PP 8)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">巨兽</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="嬉闹 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">嬉闹</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="圣剑 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">圣剑</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ef4444">Fire</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#475569">Dark</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">咆哮虎</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">81</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p2')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">85%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p2')" title="勿花果">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">勿花果</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 85%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p2', this.value)" type="range" value="85"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">威吓</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="击掌奇袭 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">击掌</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="闪焰冲锋 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">闪焰</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="抛下狠话 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">抛下</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="拍落 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">拍落</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#6366f1">Dragon</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#a855f7">Ghost</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">多龙巴鲁托</h3>
+<iconify-icon class="text-rose-400 text-xs" icon="mdi:gender-female"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">213</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p3')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p3')" title="生命玉">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">生命玉</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p3', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">恒净之躯</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="龙箭 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">龙箭</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="潜灵奇袭 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">潜灵</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="飞身重压 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">飞身</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#22c55e">Grass</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">轰擂金刚猩</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">105</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p4')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p4')" title="突击背心">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">突击背心</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p4', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">青草制造者</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="滑梯 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">滑梯</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="拍落 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">拍落</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="十万马力 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">十万</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="极速折返 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">极速</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#3b82f6">Water</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ea580c">Fighting</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">武道熊师</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">163</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p5')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p5')" title="神秘水滴">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">神秘水滴</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p5', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">无形拳</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="水流连打 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">水流</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="近身战 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">近身</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="水流喷射 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">水流</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="看穿 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">看穿</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-blue-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#eab308">Electric</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#0ea5e9">Flying</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">雷电云</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">179</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('p6')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('p6')" title="腰带">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">腰带</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-blue-500 cursor-pointer" max="100" min="0" oninput="updateHP('p6', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">不服输</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="疯狂伏特 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">疯狂</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="飞翔 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">飞翔</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="蛮力 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">蛮力</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 中间：核心分析区域 -->
+<section class="flex-1 flex flex-col gap-3 min-w-0">
+<!-- 速度排名 (Speed Tracker) -->
+<div class="h-[520px] glass-panel rounded-2xl overflow-hidden flex flex-col shadow-2xl relative border border-white/10 shrink-0">
+<div class="bg-amber-500/10 p-2.5 border-b border-amber-500/20 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<iconify-icon class="text-amber-400 text-lg animate-pulse" icon="mdi:lightning-bolt"></iconify-icon>
+<span class="font-bold text-amber-400 tracking-widest uppercase text-xs">速度排名 (SPD ORDER)</span>
+</div>
+<span class="text-[9px] text-amber-500/60 font-mono bg-amber-500/10 px-1.5 py-0.5 rounded uppercase">Live Data</span>
+</div>
+<div class="flex-1 p-2 flex flex-col gap-1.5 relative overflow-y-auto custom-scrollbar" id="speed-ranking">
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 0">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        1
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">黑马蕾冠王</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">222</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 1">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        2
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">苍响</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">220</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 2">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        3
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">多龙巴鲁托</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">213</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 3">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        4
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">风妖精</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">184</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 4">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        5
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">雷电云</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">179</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 5">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        6
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">闪电鸟</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">167</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 6">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        7
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">武道熊师</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">163</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 7">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        8
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">盖欧卡</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">156</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 8">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        9
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">猛犸</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">142</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 9">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        10
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">轰擂金刚猩</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">105</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 10">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        11
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-blue-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-blue-400">咆哮虎</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">81</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:shield-outline"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+<div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" style="order: 11">
+<div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        12
+                    </div>
+<div class="flex-1 flex items-center justify-between min-w-0">
+<div class="flex items-center gap-1.5 min-w-0">
+<div class="w-0.5 h-4 bg-rose-500 rounded-full shrink-0"></div>
+<span class="font-bold text-xs truncate text-rose-400">长毛巨魔</span>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<div class="text-right">
+<div class="text-[9px] font-header font-bold text-slate-200 leading-none">80</div>
+</div>
+<div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+<iconify-icon class="text-xs text-slate-500" icon="mdi:target"></iconify-icon>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 队伍弱点分析 (Team Weakness Analysis) - 新整合面板 -->
+<div class="flex-1 glass-panel rounded-2xl border border-white/10 p-3 flex flex-col min-h-0" style="opacity: 1;">
+<div class="flex items-center gap-2 border-b border-white/5 pb-2 mb-2 shrink-0">
+<iconify-icon class="text-indigo-400 text-lg" icon="mdi:chart-arc"></iconify-icon>
+<span class="text-xs font-bold text-slate-300 uppercase tracking-widest">队伍属性与弱点分析</span>
+</div>
+<div class="flex-1 grid grid-cols-2 gap-3 min-h-0">
+<!-- 我方分析 -->
+<div class="flex flex-col gap-2 min-h-0">
+<div class="flex items-center justify-between bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">
+<span class="text-[10px] text-blue-400 font-bold uppercase">TEAM BLUE</span>
+<span class="text-[8px] text-slate-500 uppercase">Home</span>
+</div>
+<div class="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1" style="opacity: 1;">
+<div class="">
+<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">属性分布</span>
+<div class="flex flex-wrap gap-1" id="player-type-dist" style="opacity: 1; border-radius: 0px; padding: 0px;">
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#ec4899"></div>
+<span class="text-[9px] text-slate-300 font-bold">Fairy <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#94a3b8"></div>
+<span class="text-[9px] text-slate-300 font-bold">Steel <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#ef4444"></div>
+<span class="text-[9px] text-slate-300 font-bold">Fire <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#475569"></div>
+<span class="text-[9px] text-slate-300 font-bold">Dark <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#6366f1"></div>
+<span class="text-[9px] text-slate-300 font-bold">Dragon <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#a855f7"></div>
+<span class="text-[9px] text-slate-300 font-bold">Ghost <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#22c55e"></div>
+<span class="text-[9px] text-slate-300 font-bold">Grass <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#3b82f6"></div>
+<span class="text-[9px] text-slate-300 font-bold">Water <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#ea580c"></div>
+<span class="text-[9px] text-slate-300 font-bold">Fighting <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#eab308"></div>
+<span class="text-[9px] text-slate-300 font-bold">Electric <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#0ea5e9"></div>
+<span class="text-[9px] text-slate-300 font-bold">Flying <span class="text-slate-500">x</span>1</span>
+</div>
+</div>
+</div>
+<div class="pt-1 border-t border-white/5">
+<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">防守弱点统计</span>
+<div class="flex flex-wrap gap-1.5" id="player-weakness-analysis" style="opacity: 1;">
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:image-filter-hdr" style="color:#a16207"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Ground</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:auto-fix" style="color:#ec4899"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Fairy</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:snowflake" style="color:#7dd3fc"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Ice</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:flask-poison" style="color:#a855f7"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-700 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Poison</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:fire" style="color:#ef4444"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-700 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Fire</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 敌方分析 -->
+<div class="flex flex-col gap-2 min-h-0 border-l border-white/5 pl-3">
+<div class="flex items-center justify-between bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">
+<span class="text-[10px] text-rose-400 font-bold uppercase">TEAM RED</span>
+<span class="text-[8px] text-slate-500 uppercase">Enemy</span>
+</div>
+<div class="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1">
+<div>
+<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">属性分布</span>
+<div class="flex flex-wrap gap-1" id="enemy-type-dist">
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#3b82f6"></div>
+<span class="text-[9px] text-slate-300 font-bold">Water <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#f43f5e"></div>
+<span class="text-[9px] text-slate-300 font-bold">Psychic <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#a855f7"></div>
+<span class="text-[9px] text-slate-300 font-bold">Ghost <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#7dd3fc"></div>
+<span class="text-[9px] text-slate-300 font-bold">Ice <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#a16207"></div>
+<span class="text-[9px] text-slate-300 font-bold">Ground <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#eab308"></div>
+<span class="text-[9px] text-slate-300 font-bold">Electric <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#0ea5e9"></div>
+<span class="text-[9px] text-slate-300 font-bold">Flying <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#475569"></div>
+<span class="text-[9px] text-slate-300 font-bold">Dark <span class="text-slate-500">x</span>1</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#ec4899"></div>
+<span class="text-[9px] text-slate-300 font-bold">Fairy <span class="text-slate-500">x</span>2</span>
+</div>
+<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1 h-1 rounded-full" style="background:#22c55e"></div>
+<span class="text-[9px] text-slate-300 font-bold">Grass <span class="text-slate-500">x</span>1</span>
+</div>
+</div>
+</div>
+<div class="pt-1 border-t border-white/5">
+<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">防守弱点统计</span>
+<div class="flex flex-wrap gap-1.5" id="enemy-weakness-analysis">
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:bug" style="color:#84cc16"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Bug</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:shield" style="color:#94a3b8"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Steel</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:snowflake" style="color:#7dd3fc"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Ice</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:flask-poison" style="color:#a855f7"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Poison</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-sm" icon="mdi:lightning-bolt" style="color:#eab308"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-700 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+</div>
+<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Electric</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="h-1 bg-gradient-to-r from-blue-500 via-amber-400 to-rose-500 rounded-full shrink-0"></div>
+</section>
+<!-- 右侧：敌方区域 (Enemy Zone) -->
+<section class="w-[600px] flex flex-col gap-3">
+<!-- 队伍列表 -->
+<div class="flex-1 flex flex-col min-h-0 bg-white/[0.02] rounded-2xl border border-white/5 p-3">
+<div class="flex items-center justify-between mb-2 px-2">
+<button class="flex items-center gap-2 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 transition group" id="enemy-mode-btn" onclick="toggleEnemyMode()">
+<iconify-icon class="text-rose-400 text-sm group-hover:rotate-180 transition-transform duration-500" icon="mdi:settings-helper"></iconify-icon>
+<span class="text-[9px] text-rose-300 font-bold uppercase tracking-widest">详细模式</span>
+</button>
+<div class="flex items-center gap-2">
+<h2 class="font-bold text-slate-300 tracking-wider uppercase text-xs">敌方队伍 (TEAM RED)</h2>
+<iconify-icon class="text-rose-600 text-lg" icon="mdi:sword"></iconify-icon>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-2 flex-1 overflow-y-auto custom-scrollbar pr-1" id="enemy-team">
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#3b82f6">Water</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">盖欧卡</h3>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">156</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e1')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e1')" title="蓝靛宝珠">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">蓝靛宝珠</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e1', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">始源之海</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="根源波动 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">根源</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="打雷 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">打雷</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="冰冻束 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">冰冻</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#f43f5e">Psychic</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#a855f7">Ghost</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">黑马蕾冠王</h3>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">222</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e2')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e2')" title="气势披带">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">气势披带</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e2', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">人马一体</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="星碎 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">星碎</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="精神强念 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">精神</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="诡计 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">诡计</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#7dd3fc">Ice</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#a16207">Ground</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">猛犸</h3>
+<iconify-icon class="text-rose-400 text-xs" icon="mdi:gender-female"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">142</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e3')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e3')" title="命玉">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">命玉</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e3', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">厚脂肪</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="地震 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">地震</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="冰旋 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">冰旋</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="冰砾 (PP 30)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">冰砾</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="守住 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">守住</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#eab308">Electric</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#0ea5e9">Flying</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">闪电鸟</h3>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">167</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e4')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e4')" title="文柚果">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">文柚果</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e4', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">静电</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="十万伏特 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">十万</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="暴风 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">暴风</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="羽栖 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">羽栖</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="顺风 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">顺风</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#475569">Dark</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ec4899">Fairy</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">长毛巨魔</h3>
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:gender-male"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">80</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e5')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e5')" title="光之黏土">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">光之黏土</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e5', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">恶作剧之心</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="灵魂冲击 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">灵魂</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="光墙 (PP 30)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">光墙</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="反射壁 (PP 30)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">反射</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="电磁波 (PP 20)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">电磁</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-rose-500 hover:bg-white/5 transition duration-300">
+<div class="flex gap-3">
+<!-- Left Info -->
+<div class="flex flex-col items-center w-14 shrink-0">
+<div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+<iconify-icon class="text-2xl text-slate-600" icon="mdi:pokeball"></iconify-icon>
+<div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv50</div>
+</div>
+<div class="flex flex-col w-full gap-0.5">
+<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#22c55e">Grass</div><div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:#ec4899">Fairy</div>
+</div>
+</div>
+<!-- Middle Main Info -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-1.5 min-w-0">
+<h3 class="font-bold text-base truncate">风妖精</h3>
+<iconify-icon class="text-rose-400 text-xs" icon="mdi:gender-female"></iconify-icon>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="text-right leading-none">
+<span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+<span class="text-[11px] font-header font-bold text-amber-500">184</span>
+</div>
+<button class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition" onclick="toggleStatus('e6')">
+<iconify-icon class="text-green-500" icon="mdi:check-circle-outline"></iconify-icon>
+<span class="text-slate-400 font-bold uppercase">Normal</span>
+</button>
+</div>
+</div>
+<!-- HP Section -->
+<div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+<div class="flex justify-between items-center text-[9px] mb-1">
+<div class="flex items-center gap-1.5">
+<iconify-icon class="text-green-500" icon="mdi:heart"></iconify-icon>
+<span class="font-header font-bold text-slate-300">100%</span>
+</div>
+<div class="flex items-center gap-2 cursor-pointer" onclick="toggleItem('e6')" title="腰带">
+<iconify-icon class="text-blue-400 text-xs" icon="mdi:bag-personal"></iconify-icon>
+<span class="text-[9px] text-slate-400 truncate w-16 text-right">腰带</span>
+</div>
+</div>
+<div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+<div class="h-full hp-gradient-high transition-all duration-500" style="width: 100%"></div>
+</div>
+<input class="w-full h-1 mt-1 accent-rose-500 cursor-pointer" max="100" min="0" oninput="updateHP('e6', this.value)" type="range" value="100"/>
+</div>
+<!-- Ability & Moves -->
+<div class="flex items-center gap-2">
+<div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+<iconify-icon class="text-[10px] text-blue-400" icon="mdi:xml"></iconify-icon>
+<span class="text-[9px] text-slate-300 truncate font-bold uppercase">恶作剧之心</span>
+</div>
+<div class="flex-1 grid grid-cols-4 gap-1">
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="能量球 (PP 10)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">能量</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="月亮之力 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">月亮</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="顺风 (PP 15)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">顺风</span>
+</div>
+<div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="再来一次 (PP 5)">
+<span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">再来</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- 底部操作提示 -->
+<footer class="h-10 px-10 glass-panel border-t border-white/5 flex items-center justify-between text-[11px] text-slate-500">
+<div class="flex gap-6 italic">
+<span>* 点击道具图标标记消耗状态</span>
+<span>* 点击异常图标切换(麻痹/灼伤/中毒/睡眠/冰冻)</span>
+<span>* 速度受顺风、空间及异常状态即时修正</span>
+</div>
+<div>VGC HELPER V4.2.0 - 2026.04.23</div>
+</footer>
+<script>
+        // 属性克制关系 (防御方)
+        const TYPE_CHART = {
+            'Fire': ['Water', 'Ground', 'Rock'],
+            'Water': ['Electric', 'Grass'],
+            'Grass': ['Fire', 'Ice', 'Poison', 'Flying', 'Bug'],
+            'Electric': ['Ground'],
+            'Ice': ['Fire', 'Fighting', 'Rock', 'Steel'],
+            'Fighting': ['Flying', 'Psychic', 'Fairy'],
+            'Poison': ['Ground', 'Psychic'],
+            'Ground': ['Water', 'Grass', 'Ice'],
+            'Flying': ['Electric', 'Ice', 'Rock'],
+            'Psychic': ['Bug', 'Ghost', 'Dark'],
+            'Bug': ['Fire', 'Flying', 'Rock'],
+            'Rock': ['Water', 'Grass', 'Fighting', 'Ground', 'Steel'],
+            'Ghost': ['Ghost', 'Dark'],
+            'Dragon': ['Ice', 'Dragon', 'Fairy'],
+            'Steel': ['Fire', 'Fighting', 'Ground'],
+            'Fairy': ['Poison', 'Steel'],
+            'Dark': ['Fighting', 'Bug', 'Fairy'],
+            'Normal': ['Fighting']
+        };
+
+        function getWeaknesses(types) {
+            const multipliers = {};
+            types.forEach(t => {
+                const weaks = TYPE_CHART[t] || [];
+                weaks.forEach(w => {
+                    multipliers[w] = (multipliers[w] || 1) * 2;
+                });
+            });
+            return Object.entries(multipliers)
+                .filter(([type, mult]) => mult >= 2)
+                .sort((a, b) => b[1] - a[1]);
+        }
+
+        // 初始化数据
+        const TYPES = {
+            'Fire': { color: '#ef4444', icon: 'mdi:fire' },
+            'Water': { color: '#3b82f6', icon: 'mdi:water' },
+            'Grass': { color: '#22c55e', icon: 'mdi:leaf' },
+            'Electric': { color: '#eab308', icon: 'mdi:lightning-bolt' },
+            'Dragon': { color: '#6366f1', icon: 'mdi:dragon' },
+            'Fairy': { color: '#ec4899', icon: 'mdi:auto-fix' },
+            'Ghost': { color: '#a855f7', icon: 'mdi:ghost' },
+            'Steel': { color: '#94a3b8', icon: 'mdi:shield' },
+            'Flying': { color: '#0ea5e9', icon: 'mdi:airplane' },
+            'Ground': { color: '#a16207', icon: 'mdi:image-filter-hdr' },
+            'Psychic': { color: '#f43f5e', icon: 'mdi:crystal-ball' },
+            'Ice': { color: '#7dd3fc', icon: 'mdi:snowflake' },
+            'Dark': { color: '#475569', icon: 'mdi:moon-waning-crescent' },
+            'Fighting': { color: '#ea580c', icon: 'mdi:hand-back-fist' },
+            'Rock': { color: '#b45309', icon: 'mdi:stone' },
+            'Bug': { color: '#84cc16', icon: 'mdi:bug' },
+            'Poison': { color: '#a855f7', icon: 'mdi:flask-poison' },
+            'Normal': { color: '#94a3b8', icon: 'mdi:circle-outline' }
+        };
+
+        let battleState = {
+            turn: 1,
+            weather: '晴朗',
+            terrain: '无',
+            sides: {
+                player: { tailwind: 0, screens: [] },
+                enemy: { tailwind: 0, screens: [] }
+            }
+        };
+
+        const INITIAL_PLAYER_TEAM = [
+            { id: 'p1', name: '苍响', level: 50, sex: 'none', types: ['Fairy', 'Steel'], hp: 100, speed: 220, item: '腐朽的剑', itemUsed: false, ability: '不挠之剑', status: 'none', moves: [{name:'巨兽斩', pp:8}, {name:'嬉闹', pp:10}, {name:'圣剑', pp:15}, {name:'守住', pp:10}] },
+            { id: 'p2', name: '咆哮虎', level: 50, sex: 'male', types: ['Fire', 'Dark'], hp: 85, speed: 81, item: '勿花果', itemUsed: false, ability: '威吓', status: 'none', moves: [{name:'击掌奇袭', pp:10}, {name:'闪焰冲锋', pp:15}, {name:'抛下狠话', pp:20}, {name:'拍落', pp:20}] },
+            { id: 'p3', name: '多龙巴鲁托', level: 50, sex: 'female', types: ['Dragon', 'Ghost'], hp: 100, speed: 213, item: '生命玉', itemUsed: false, ability: '恒净之躯', status: 'none', moves: [{name:'龙箭', pp:10}, {name:'潜灵奇袭', pp:10}, {name:'飞身重压', pp:15}, {name:'守住', pp:10}] },
+            { id: 'p4', name: '轰擂金刚猩', level: 50, sex: 'male', types: ['Grass'], hp: 100, speed: 105, item: '突击背心', itemUsed: false, ability: '青草制造者', status: 'none', moves: [{name:'滑梯', pp:20}, {name:'拍落', pp:20}, {name:'十万马力', pp:10}, {name:'极速折返', pp:20}] },
+            { id: 'p5', name: '武道熊师', level: 50, sex: 'male', types: ['Water', 'Fighting'], hp: 100, speed: 163, item: '神秘水滴', itemUsed: false, ability: '无形拳', status: 'none', moves: [{name:'水流连打', pp:5}, {name:'近身战', pp:5}, {name:'水流喷射', pp:20}, {name:'看穿', pp:5}] },
+            { id: 'p6', name: '雷电云', level: 50, sex: 'male', types: ['Electric', 'Flying'], hp: 100, speed: 179, item: '腰带', itemUsed: false, ability: '不服输', status: 'none', moves: [{name:'疯狂伏特', pp:15}, {name:'飞翔', pp:15}, {name:'蛮力', pp:5}, {name:'守住', pp:10}] },
+        ];
+
+        const INITIAL_ENEMY_TEAM = [
+            { id: 'e1', name: '盖欧卡', level: 50, sex: 'none', types: ['Water'], hp: 100, speed: 156, item: '蓝靛宝珠', itemUsed: false, ability: '始源之海', status: 'none', moves: [{name:'根源波动', pp:10}, {name:'打雷', pp:10}, {name:'冰冻束', pp:10}, {name:'守住', pp:10}] },
+            { id: 'e2', name: '黑马蕾冠王', level: 50, sex: 'none', types: ['Psychic', 'Ghost'], hp: 100, speed: 222, item: '气势披带', itemUsed: false, ability: '人马一体', status: 'none', moves: [{name:'星碎', pp:5}, {name:'精神强念', pp:10}, {name:'诡计', pp:20}, {name:'守住', pp:10}] },
+            { id: 'e3', name: '猛犸', level: 50, sex: 'female', types: ['Ice', 'Ground'], hp: 100, speed: 142, item: '命玉', itemUsed: false, ability: '厚脂肪', status: 'none', moves: [{name:'地震', pp:10}, {name:'冰旋', pp:15}, {name:'冰砾', pp:30}, {name:'守住', pp:10}] },
+            { id: 'e4', name: '闪电鸟', level: 50, sex: 'none', types: ['Electric', 'Flying'], hp: 100, speed: 167, item: '文柚果', itemUsed: false, ability: '静电', status: 'none', moves: [{name:'十万伏特', pp:15}, {name:'暴风', pp:10}, {name:'羽栖', pp:10}, {name:'顺风', pp:15}] },
+            { id: 'e5', name: '长毛巨魔', level: 50, sex: 'male', types: ['Dark', 'Fairy'], hp: 100, speed: 80, item: '光之黏土', itemUsed: false, ability: '恶作剧之心', status: 'none', moves: [{name:'灵魂冲击', pp:15}, {name:'光墙', pp:30}, {name:'反射壁', pp:30}, {name:'电磁波', pp:20}] },
+            { id: 'e6', name: '风妖精', level: 50, sex: 'female', types: ['Grass', 'Fairy'], hp: 100, speed: 184, item: '腰带', itemUsed: false, ability: '恶作剧之心', status: 'none', moves: [{name:'能量球', pp:10}, {name:'月亮之力', pp:15}, {name:'顺风', pp:15}, {name:'再来一次', pp:5}] },
+        ];
+
+        let playerTeam = JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM));
+        let enemyTeam = JSON.parse(JSON.stringify(INITIAL_ENEMY_TEAM));
+        let playerMode = 'detailed'; // 'detailed' or 'simple'
+        let enemyMode = 'detailed'; // 'detailed' or 'simple'
+
+        let teamSchemes = [
+            { id: 1, name: '方案 01: 雨天进攻组', color: '#3b82f6', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+            { id: 2, name: '方案 02: 晴天平衡组', color: '#f97316', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+            { id: 3, name: '方案 03: 空间受队组', color: '#a855f7', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+            { id: 4, name: '方案 04: 顺风快攻组', color: '#10b981', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+            { id: 5, name: '方案 05: 电场核心组', color: '#eab308', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) },
+            { id: 6, name: '方案 06: 沙暴受控组', color: '#f43f5e', team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM)) }
+        ];
+
+        function renderTeamSchemes() {
+            const list = document.getElementById('team-schemes-list');
+            if (!list) return;
+            list.innerHTML = teamSchemes.map(scheme => `
+                <div class="group relative bg-white/5 border border-white/5 rounded-lg p-2 hover:bg-white/10 transition-all">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-2 h-2 rounded-full" style="background-color: ${scheme.color}; box-shadow: 0 0 8px ${scheme.color}99"></div>
+                        <input type="text" value="${scheme.name}" 
+                            class="bg-transparent border-none text-[11px] font-medium text-slate-300 focus:outline-none focus:text-blue-400 w-full" 
+                            onchange="renameTeamScheme(${scheme.id}, this.value)">
+                    </div>
+                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="selectTeam(${scheme.id})" class="text-[9px] text-slate-400 hover:text-white px-2 py-0.5 bg-white/5 hover:bg-white/10 rounded transition-colors border border-white/10">使用</button>
+                        <button onclick="replaceTeamScheme(${scheme.id})" class="text-[9px] text-blue-400 hover:text-blue-300 px-2 py-0.5 bg-blue-400/10 hover:bg-blue-400/20 rounded transition-colors border border-blue-400/20">替换</button>
+                        <button onclick="deleteTeamScheme(${scheme.id})" class="text-[9px] text-rose-400 hover:text-rose-300 px-2 py-0.5 bg-rose-400/10 hover:bg-rose-400/20 rounded transition-colors border border-rose-400/20">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addTeamScheme() {
+            const nextId = teamSchemes.length > 0 ? Math.max(...teamSchemes.map(s => s.id)) + 1 : 1;
+            const colors = ['#3b82f6', '#f97316', '#a855f7', '#10b981', '#eab308', '#f43f5e', '#ec4899', '#06b6d4'];
+            const color = colors[nextId % colors.length];
+            teamSchemes.push({
+                id: nextId,
+                name: `新建方案 ${nextId.toString().padStart(2, '0')}`,
+                color: color,
+                team: JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM))
+            });
+            renderTeamSchemes();
+        }
+
+        function deleteTeamScheme(id) {
+            if (confirm('确定要删除该队伍方案吗？')) {
+                teamSchemes = teamSchemes.filter(s => s.id !== id);
+                renderTeamSchemes();
+            }
+        }
+
+        function renameTeamScheme(id, newName) {
+            const scheme = teamSchemes.find(s => s.id === id);
+            if (scheme) {
+                scheme.name = newName;
+            }
+        }
+
+        function replaceTeamScheme(id) {
+            const scheme = teamSchemes.find(s => s.id === id);
+            if (scheme) {
+                if (confirm('是否将当前方案替换为默认预设队伍？')) {
+                    scheme.team = JSON.parse(JSON.stringify(INITIAL_PLAYER_TEAM));
+                    alert('方案已更新');
+                }
+            }
+        }
+
+        function togglePlayerMode() {
+            playerMode = playerMode === 'detailed' ? 'simple' : 'detailed';
+            const btn = document.getElementById('player-mode-btn');
+            btn.innerHTML = `
+                <iconify-icon icon="mdi:settings-helper" class="text-blue-400 ${playerMode === 'simple' ? 'rotate-180' : ''} transition-transform duration-500"></iconify-icon>
+                <span class="text-[10px] text-blue-300 font-bold uppercase tracking-widest">${playerMode === 'detailed' ? '详细模式' : '粗略模式'}</span>
+            `;
+            renderTeams();
+        }
+
+        function toggleEnemyMode() {
+            enemyMode = enemyMode === 'detailed' ? 'simple' : 'detailed';
+            const btn = document.getElementById('enemy-mode-btn');
+            btn.innerHTML = `
+                <iconify-icon icon="mdi:settings-helper" class="text-rose-400 ${enemyMode === 'simple' ? 'rotate-180' : ''} transition-transform duration-500"></iconify-icon>
+                <span class="text-[10px] text-rose-300 font-bold uppercase tracking-widest">${enemyMode === 'detailed' ? '详细模式' : '粗略模式'}</span>
+            `;
+            renderTeams();
+        }
+
+        function renderTeams() {
+            const pContainer = document.getElementById('player-team');
+            const eContainer = document.getElementById('enemy-team');
+            
+            pContainer.innerHTML = playerTeam.map(pk => createPokemonCard(pk, 'blue', playerMode)).join('');
+            eContainer.innerHTML = enemyTeam.map(pk => createPokemonCard(pk, 'rose', enemyMode)).join('');
+            
+            updateSpeedRanking();
+            updateAnalysis();
+            updateBattleDisplay();
+        }
+
+        function updateBattleDisplay() {
+            document.getElementById('turn-count').innerText = battleState.turn.toString().padStart(2, '0');
+            document.getElementById('weather-text').innerText = battleState.weather;
+            document.getElementById('terrain-text').innerText = battleState.terrain;
+            
+            const wIcon = document.getElementById('weather-icon');
+            if (battleState.weather === '晴朗') wIcon.setAttribute('icon', 'mdi:white-balance-sunny');
+            else if (battleState.weather === '雨天') wIcon.setAttribute('icon', 'mdi:weather-pouring');
+            else if (battleState.weather === '沙暴') wIcon.setAttribute('icon', 'mdi:weather-dust');
+            else wIcon.setAttribute('icon', 'mdi:weather-cloudy');
+
+            const tIcon = document.getElementById('terrain-icon');
+            if (battleState.terrain === '青草') tIcon.setAttribute('icon', 'mdi:grass');
+            else if (battleState.terrain === '电气') tIcon.setAttribute('icon', 'mdi:lightning-bolt');
+            else if (battleState.terrain === '薄雾') tIcon.setAttribute('icon', 'mdi:blur');
+            else tIcon.setAttribute('icon', 'mdi:land-plots');
+        }
+
+        function cycleWeather() {
+            const w = ['晴朗', '雨天', '沙暴', '冰雹', '无'];
+            let idx = w.indexOf(battleState.weather);
+            battleState.weather = w[(idx + 1) % w.length];
+            updateBattleDisplay();
+        }
+
+        function cycleTerrain() {
+            const t = ['无', '青草', '电气', '薄雾', '精神'];
+            let idx = t.indexOf(battleState.terrain);
+            battleState.terrain = t[(idx + 1) % t.length];
+            updateBattleDisplay();
+        }
+
+        function updateAnalysis() {
+            calculateTeamAnalysis(playerTeam, 'player-type-dist', 'player-weakness-analysis');
+            calculateTeamAnalysis(enemyTeam, 'enemy-type-dist', 'enemy-weakness-analysis');
+        }
+
+        function calculateTeamAnalysis(team, distId, weakId) {
+            const typeDist = {};
+            const weaknessMap = {};
+            
+            team.forEach(pk => {
+                pk.types.forEach(t => {
+                    typeDist[t] = (typeDist[t] || 0) + 1;
+                    const weaks = TYPE_CHART[t] || [];
+                    weaks.forEach(w => {
+                        weaknessMap[w] = (weaknessMap[w] || 0) + 1;
+                    });
+                });
+            });
+
+            const distContainer = document.getElementById(distId);
+            distContainer.innerHTML = Object.entries(typeDist).map(([type, count]) => `
+                <div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+                    <div class="w-1 h-1 rounded-full" style="background:${TYPES[type]?.color}"></div>
+                    <span class="text-[9px] text-slate-300 font-bold">${type} <span class="text-slate-500">x</span>${count}</span>
+                </div>
+            `).join('');
+
+            const weakContainer = document.getElementById(weakId);
+            const sortedWeaknesses = Object.entries(weaknessMap)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            weakContainer.innerHTML = sortedWeaknesses.map(([w, count]) => `
+                <div class="flex flex-col items-center group">
+                    <div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+                        <iconify-icon icon="${TYPES[w]?.icon}" style="color:${TYPES[w]?.color}" class="text-sm"></iconify-icon>
+                        <div class="absolute -top-1.5 -right-1.5 w-4 h-4 ${count >= 3 ? 'bg-rose-600' : 'bg-slate-700'} rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">${count}</div>
+                    </div>
+                    <span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">${w}</span>
+                </div>
+            `).join('');
+        }
+
+        function createPokemonCard(pk, color, mode) {
+            const isBlue = color === 'blue';
+            const hpClass = pk.hp > 50 ? 'hp-gradient-high' : (pk.hp > 20 ? 'hp-gradient-mid' : 'hp-gradient-low');
+            const isSimple = mode === 'simple';
+            
+            if (isSimple) {
+                const weaknesses = getWeaknesses(pk.types);
+                return `
+                    <div class="glass-panel rounded-xl p-2 border-l-[4px] border-${color}-500 hover:bg-white/5 transition duration-300">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 shrink-0 relative">
+                                <iconify-icon icon="mdi:pokeball" class="text-2xl text-slate-600"></iconify-icon>
+                                <div class="absolute -bottom-1 -right-1 bg-slate-900/90 px-1 text-[8px] font-bold text-slate-400 rounded">L${pk.level}</div>
+                            </div>
+                            
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-bold text-base truncate">${pk.name}</h3>
+                                        <div class="flex gap-0.5">
+                                            ${pk.types.map(t => `<div class="w-2 h-2 rounded-full" style="background:${TYPES[t]?.color}" title="${t}"></div>`).join('')}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <!-- 弱点倍率 (放大显示) -->
+                                        <div class="flex gap-2">
+                                            ${weaknesses.map(([t, m]) => `
+                                                <div class="flex flex-col items-center leading-none">
+                                                    <span class="text-[7px] text-slate-500 uppercase font-bold">${t.substring(0,3)}</span>
+                                                    <span class="text-2xl font-black ${m === 4 ? 'text-rose-500 drop-shadow-[0_0_5px_rgba(244,63,94,0.5)]' : 'text-amber-400'}">${m}x</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                        <div class="flex items-center gap-1 border-l border-white/10 pl-2">
+                                            <span class="text-[10px] font-header font-bold text-amber-500 bg-amber-500/10 px-1 rounded">S:${pk.speed}</span>
+                                            <button onclick="toggleStatus('${pk.id}')" class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded border border-white/5">
+                                                <iconify-icon icon="${pk.status === 'none' ? 'mdi:emoticon-happy-outline' : 'mdi:alert-circle'}" class="text-xs ${pk.status === 'none' ? 'text-slate-500' : 'text-amber-400'}"></iconify-icon>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="h-2 flex-1 bg-slate-900 rounded-full overflow-hidden border border-white/5">
+                                        <div class="h-full ${hpClass} transition-all duration-500" style="width: ${pk.hp}%"></div>
+                                    </div>
+                                    <span class="font-mono text-[10px] font-bold ${pk.hp > 20 ? 'text-slate-400' : 'text-rose-500'} w-8 text-right">${pk.hp}%</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="${pk.hp}" oninput="updateHP('${pk.id}', this.value)" class="w-full h-1 mt-1 accent-${color}-500">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-${color}-500 hover:bg-white/5 transition duration-300">
+                    <div class="flex gap-3">
+                        <!-- Left Info -->
+                        <div class="flex flex-col items-center w-14 shrink-0">
+                            <div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1">
+                                <iconify-icon icon="mdi:pokeball" class="text-2xl text-slate-600"></iconify-icon>
+                                <div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv${pk.level}</div>
+                            </div>
+                            <div class="flex flex-col w-full gap-0.5">
+                                ${pk.types.map(t => `<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:${TYPES[t]?.color}">${t}</div>`).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Middle Main Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start mb-1">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <h3 class="font-bold text-base truncate">${pk.name}</h3>
+                                    ${pk.sex === 'male' ? '<iconify-icon icon="mdi:gender-male" class="text-blue-400 text-xs"></iconify-icon>' : (pk.sex === 'female' ? '<iconify-icon icon="mdi:gender-female" class="text-rose-400 text-xs"></iconify-icon>' : '')}
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="text-right leading-none">
+                                        <span class="text-[7px] text-slate-500 block uppercase">Speed</span>
+                                        <span class="text-[11px] font-header font-bold text-amber-500">${pk.speed}</span>
+                                    </div>
+                                    <button onclick="toggleStatus('${pk.id}')" class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition">
+                                        <iconify-icon icon="${pk.status === 'none' ? 'mdi:check-circle-outline' : 'mdi:alert-circle-outline'}" class="${pk.status === 'none' ? 'text-green-500' : 'text-amber-500'}"></iconify-icon>
+                                        <span class="${pk.status === 'none' ? 'text-slate-400' : 'text-amber-400'} font-bold uppercase">${pk.status === 'none' ? 'Normal' : pk.status}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- HP Section -->
+                            <div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
+                                <div class="flex justify-between items-center text-[9px] mb-1">
+                                    <div class="flex items-center gap-1.5">
+                                        <iconify-icon icon="mdi:heart" class="${pk.hp > 20 ? 'text-green-500' : 'text-rose-500'}"></iconify-icon>
+                                        <span class="font-header font-bold ${pk.hp > 20 ? 'text-slate-300' : 'text-rose-500'}">${pk.hp}%</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 cursor-pointer ${pk.itemUsed ? 'opacity-30' : ''}" onclick="toggleItem('${pk.id}')" title="${pk.item}">
+                                        <iconify-icon icon="mdi:bag-personal" class="text-blue-400 text-xs"></iconify-icon>
+                                        <span class="text-[9px] text-slate-400 truncate w-16 text-right">${pk.item}</span>
+                                    </div>
+                                </div>
+                                <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                                    <div class="h-full ${hpClass} transition-all duration-500" style="width: ${pk.hp}%"></div>
+                                </div>
+                                <input type="range" min="0" max="100" value="${pk.hp}" oninput="updateHP('${pk.id}', this.value)" class="w-full h-1 mt-1 accent-${color}-500 cursor-pointer">
+                            </div>
+
+                            <!-- Ability & Moves -->
+                            <div class="flex items-center gap-2">
+                                <div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
+                                    <iconify-icon icon="mdi:xml" class="text-[10px] text-blue-400"></iconify-icon>
+                                    <span class="text-[9px] text-slate-300 truncate font-bold uppercase">${pk.ability}</span>
+                                </div>
+                                <div class="flex-1 grid grid-cols-4 gap-1">
+                                    ${pk.moves.slice(0, 4).map(m => `
+                                        <div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="${m.name} (PP ${m.pp})">
+                                            <span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">${m.name.substring(0,2)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        function updateSpeedRanking() {
+            const container = document.getElementById('speed-ranking');
+            const allPokemon = [
+                ...playerTeam.map(p => ({...p, team: 'blue'})),
+                ...enemyTeam.map(e => ({...e, team: 'rose'}))
+            ];
+
+            // 基础排序算法
+            allPokemon.sort((a, b) => {
+                let speedA = a.speed;
+                let speedB = b.speed;
+                if(a.status === '麻痹') speedA *= 0.5;
+                if(b.status === '麻痹') speedB *= 0.5;
+                return speedB - speedA;
+            });
+
+            // 渲染列表 (更紧凑的设计)
+            container.innerHTML = allPokemon.map((pk, index) => `
+                <div class="speed-rank-item flex items-center gap-2 bg-slate-900/40 p-1 rounded-lg border border-white/5 hover:border-amber-500/30 transition-all shadow-md" 
+                     style="order: ${index}">
+                    <div class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded font-header font-bold text-amber-500 text-[10px] border border-amber-500/20 shrink-0">
+                        ${index + 1}
+                    </div>
+                    <div class="flex-1 flex items-center justify-between min-w-0">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <div class="w-0.5 h-4 bg-${pk.team}-500 rounded-full shrink-0"></div>
+                            <span class="font-bold text-xs truncate ${pk.team === 'blue' ? 'text-blue-400' : 'text-rose-400'}">${pk.name}</span>
+                            ${pk.status !== 'none' ? `<span class="px-1 bg-amber-500/10 text-amber-500 text-[7px] rounded shrink-0 border border-amber-500/20">${pk.status}</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <div class="text-right">
+                                <div class="text-[9px] font-header font-bold text-slate-200 leading-none">${Math.floor(pk.speed * (pk.status === '麻痹' ? 0.5 : 1))}</div>
+                            </div>
+                            <div class="w-5 h-5 flex items-center justify-center bg-white/5 rounded-full">
+                                <iconify-icon icon="${pk.team === 'blue' ? 'mdi:shield-outline' : 'mdi:target'}" class="text-xs text-slate-500"></iconify-icon>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 交互逻辑
+        function updateHP(id, val) {
+            const pk = [...playerTeam, ...enemyTeam].find(p => p.id === id);
+            if (pk) {
+                pk.hp = parseInt(val);
+                renderTeams();
+            }
+        }
+
+        function toggleItem(id) {
+            const pk = [...playerTeam, ...enemyTeam].find(p => p.id === id);
+            if (pk) {
+                pk.itemUsed = !pk.itemUsed;
+                renderTeams();
+            }
+        }
+
+        function toggleStatus(id) {
+            const pk = [...playerTeam, ...enemyTeam].find(p => p.id === id);
+            if (pk) {
+                const states = ['none', '麻痹', '灼伤', '中毒', '睡眠', '冰冻'];
+                let idx = states.indexOf(pk.status);
+                pk.status = states[(idx + 1) % states.length];
+                renderTeams();
+            }
+        }
+
+        // 队伍方案控制
+        function toggleTeamPopup() {
+            const popup = document.getElementById('team-popup');
+            const isHidden = popup.classList.contains('hidden');
+            if (isHidden) {
+                renderTeamSchemes();
+                popup.classList.remove('hidden');
+            } else {
+                popup.classList.add('hidden');
+            }
+        }
+
+        function selectTeam(id) {
+            const scheme = teamSchemes.find(s => s.id === id);
+            if (scheme) {
+                console.log('Selected team scheme:', scheme.name);
+                playerTeam = JSON.parse(JSON.stringify(scheme.team));
+                renderTeams();
+            }
+            document.getElementById('team-popup').classList.add('hidden');
+        }
+
+        // 模式切换控制
+        function toggleModePopup() {
+            const popup = document.getElementById('mode-popup');
+            popup.classList.toggle('hidden');
+        }
+
+        function triggerScreenshotMode() {
+            document.getElementById('screenshot-input').click();
+            document.getElementById('mode-popup').classList.add('hidden');
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                console.log('Uploaded screenshot:', file.name);
+                // 上传完图片后，隐藏弹窗（即切回主页面状态）
+                alert('图片已上传，正在解析...');
+                // 这里可以添加解析逻辑
+            }
+            document.getElementById('mode-popup').classList.add('hidden');
+        }
+
+        function setManualMode() {
+            console.log('Switched to Manual Mode');
+            // 切回主页面逻辑（即隐藏弹窗）
+            document.getElementById('mode-popup').classList.add('hidden');
+        }
+
+        // 点击外部关闭弹窗
+        window.addEventListener('click', function(e) {
+            const teamPopup = document.getElementById('team-popup');
+            const teamButton = teamPopup.previousElementSibling;
+            
+            if (teamPopup && !teamPopup.contains(e.target) && !teamButton.contains(e.target)) {
+                teamPopup.classList.add('hidden');
+            }
+
+            const modePopup = document.getElementById('mode-popup');
+            const modeButton = modePopup.previousElementSibling;
+            if (modePopup && !modePopup.contains(e.target) && !modeButton.contains(e.target)) {
+                modePopup.classList.add('hidden');
+            }
+        });
+
+        // 模拟计时器
+        let timeLeft = 15 * 60;
+        setInterval(() => {
+            if (timeLeft > 0) {
+                timeLeft--;
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                document.getElementById('timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+        }, 1000);
+
+        // 初始化渲染
+        renderTeams();
+    </script>
+</body></html>
