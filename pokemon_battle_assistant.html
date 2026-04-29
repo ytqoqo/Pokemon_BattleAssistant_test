@@ -3,7 +3,7 @@
 <html data-immersive-translate-page-theme="dark" lang="zh-CN"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>VGC 2026 竞技场对战助手</title>
+<title>Pokemon Champion 对战助手</title>
 <script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
 <script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
 <script>
@@ -81,13 +81,75 @@ function createDatalist() {
             font-family: 'Noto Sans SC', sans-serif;
             background-color: #020617;
             overflow: hidden;
-            width: 1920px;
-            height: 1080px;
-            margin: 0 auto;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
             color: #f8fafc;
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
+
+        /* 粗略模式分区标题栏 */
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 2px;
+            margin-bottom: 4px;
+        }
+
+        /* ===== 详细模式属性条 - CSS 变量可调 ===== */
+        .stat-row-with-icon {
+            display: flex;
+            align-items: center;
+            gap: var(--stat-row-gap, 3px);
+            height: var(--stat-row-height, 20px);
+            line-height: 1;
+        }
+        .stat-icon-wrap {
+            width: var(--stat-icon-size, 21px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .stat-label {
+            width: var(--stat-label-width, 29px);
+            font-weight: 700;
+            font-size: var(--stat-label-size, 12px);
+            color: #94a3b8;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .stat-value {
+            font-size: var(--stat-value-size, 13px);
+            font-weight: 600;
+            color: #e2e8f0;
+            font-family: 'Orbitron', sans-serif;
+            width: var(--stat-value-width, 30px);
+            text-align: right;
+        }
+        .stat-bar-container {
+            flex: 1;
+            height: var(--stat-bar-height, 3px);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .stat-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .stat-bar.hp { background: linear-gradient(90deg, #22c55e, #4ade80); }
+        .stat-bar.attack { background: linear-gradient(90deg, #ef4444, #f87171); }
+        .stat-bar.defense { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .stat-bar.spAttack { background: linear-gradient(90deg, #a855f7, #c084fc); }
+        .stat-bar.spDefense { background: linear-gradient(90deg, #eab308, #facc15); }
+        .stat-bar.speed { background: linear-gradient(90deg, #f97316, #fb923c); }
 
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
@@ -155,6 +217,37 @@ function createDatalist() {
         .speed-rank-item input {
             background: transparent;
         }
+
+        /* 卡片容器 - 半透明背景精灵图的定位参考 */
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* 背景精灵图 - 半透明垫底 */
+        .card-bg-sprite {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 224px;
+            height: 224px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.15;
+            pointer-events: none;
+            filter: grayscale(30%);
+        }
+
+        /* 信息层 - 确保在精灵图上方 */
+        .card-info {
+            position: relative;
+            z-index: 1;
+        }
+
     </style>
 <style data-id="immersive-translate-input-injected-css"></style>
 </head>
@@ -221,6 +314,10 @@ function createDatalist() {
 </div>
 <!-- 右侧：模式切换 -->
 	<div class="flex items-center justify-end gap-4 w-[400px] relative">
+	<button class="hidden flex items-center gap-2 px-4 py-2 bg-amber-600/20 hover:bg-amber-600/40 border border-amber-500/50 rounded-lg transition-all group" onclick="document.getElementById('debug-panel').style.display = document.getElementById('debug-panel').style.display === 'none' ? 'block' : 'none'">
+	<iconify-icon class="text-xl text-amber-400 group-hover:rotate-45 transition-transform duration-300" icon="mdi:tune-variant"></iconify-icon>
+	<span class="text-sm font-bold tracking-widest text-amber-400">调节面板</span>
+	</button>
 	<button class="flex items-center gap-2 px-4 py-2 bg-rose-600/20 hover:bg-rose-600/40 border border-rose-500/50 rounded-lg transition-all group" onclick="toggleModePopup()">
 	<iconify-icon class="text-xl text-rose-400 group-hover:rotate-180 transition-transform duration-500" icon="mdi:swap-horizontal"></iconify-icon>
 	<span class="text-sm font-bold tracking-widest text-rose-400">切换模式</span>
@@ -940,103 +1037,103 @@ function createDatalist() {
 <!-- 队伍弱点分析 (Team Weakness Analysis) - 新整合面板 -->
 <div class="flex-1 glass-panel rounded-2xl border border-white/10 p-3 flex flex-col min-h-0">
 <div class="flex items-center gap-2 border-b border-white/5 pb-2 mb-2 shrink-0">
-<iconify-icon class="text-indigo-400 text-lg" icon="mdi:chart-arc"></iconify-icon>
-<span class="text-xs font-bold text-slate-300 uppercase tracking-widest">队伍属性与弱点分析</span>
+<iconify-icon class="text-indigo-400 text-xl" icon="mdi:chart-arc"></iconify-icon>
+<span class="text-sm font-bold text-slate-300 uppercase tracking-widest">队伍属性与弱点分析</span>
 </div>
 <div class="flex-1 grid grid-cols-2 gap-3 min-h-0">
 <!-- 我方分析 -->
 <div class="flex flex-col gap-2 min-h-0">
 <div class="flex items-center justify-between bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">
-<span class="text-[10px] text-blue-400 font-bold uppercase">TEAM BLUE</span>
-<span class="text-[8px] text-slate-500 uppercase">Home</span>
+<span class="text-xs text-blue-400 font-bold uppercase">TEAM BLUE</span>
+<span class="text-[10px] text-slate-500 uppercase">Home</span>
 </div>
 <div class="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1">
 <div>
-<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">属性分布</span>
+<span class="text-[11px] text-slate-500 uppercase font-bold mb-1.5 block">属性分布</span>
 <div class="flex flex-wrap gap-1" id="player-type-dist">
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#ec4899"></div>
-<span class="text-[9px] text-slate-300 font-bold">Fairy <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#ec4899"></div>
+<span class="text-[11px] text-slate-300 font-bold">Fairy <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#94a3b8"></div>
-<span class="text-[9px] text-slate-300 font-bold">Steel <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#94a3b8"></div>
+<span class="text-[11px] text-slate-300 font-bold">Steel <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#ef4444"></div>
-<span class="text-[9px] text-slate-300 font-bold">Fire <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#ef4444"></div>
+<span class="text-[11px] text-slate-300 font-bold">Fire <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#475569"></div>
-<span class="text-[9px] text-slate-300 font-bold">Dark <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#475569"></div>
+<span class="text-[11px] text-slate-300 font-bold">Dark <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#6366f1"></div>
-<span class="text-[9px] text-slate-300 font-bold">Dragon <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#6366f1"></div>
+<span class="text-[11px] text-slate-300 font-bold">Dragon <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#a855f7"></div>
-<span class="text-[9px] text-slate-300 font-bold">Ghost <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#a855f7"></div>
+<span class="text-[11px] text-slate-300 font-bold">Ghost <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#22c55e"></div>
-<span class="text-[9px] text-slate-300 font-bold">Grass <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#22c55e"></div>
+<span class="text-[11px] text-slate-300 font-bold">Grass <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#3b82f6"></div>
-<span class="text-[9px] text-slate-300 font-bold">Water <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#3b82f6"></div>
+<span class="text-[11px] text-slate-300 font-bold">Water <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#ea580c"></div>
-<span class="text-[9px] text-slate-300 font-bold">Fighting <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#ea580c"></div>
+<span class="text-[11px] text-slate-300 font-bold">Fighting <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#eab308"></div>
-<span class="text-[9px] text-slate-300 font-bold">Electric <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#eab308"></div>
+<span class="text-[11px] text-slate-300 font-bold">Electric <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#0ea5e9"></div>
-<span class="text-[9px] text-slate-300 font-bold">Flying <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#0ea5e9"></div>
+<span class="text-[11px] text-slate-300 font-bold">Flying <span class="text-slate-500">x</span>1</span>
 </div>
 </div>
 </div>
 <div class="pt-1 border-t border-white/5">
-<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">防守弱点统计</span>
-<div class="flex flex-wrap gap-1.5" id="player-weakness-analysis">
+<span class="text-[11px] text-slate-500 uppercase font-bold mb-1.5 block">防守弱点统计</span>
+<div class="flex flex-wrap gap-2" id="player-weakness-analysis">
 <div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:image-filter-hdr" style="color:#a16207"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:image-filter-hdr" style="color:#a16207"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-600 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
 </div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Ground</span>
-</div>
-<div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:auto-fix" style="color:#ec4899"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
-</div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Fairy</span>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Ground</span>
 </div>
 <div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:snowflake" style="color:#7dd3fc"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:auto-fix" style="color:#ec4899"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-600 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
 </div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Ice</span>
-</div>
-<div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:flask-poison" style="color:#a855f7"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-700 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
-</div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Poison</span>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Fairy</span>
 </div>
 <div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:fire" style="color:#ef4444"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-700 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:snowflake" style="color:#7dd3fc"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-600 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
 </div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Fire</span>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Ice</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:flask-poison" style="color:#a855f7"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-700 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+</div>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Poison</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:fire" style="color:#ef4444"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-700 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+</div>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Fire</span>
 </div>
 </div>
 </div>
@@ -1045,92 +1142,92 @@ function createDatalist() {
 <!-- 敌方分析 -->
 <div class="flex flex-col gap-2 min-h-0 border-l border-white/5 pl-3">
 <div class="flex items-center justify-between bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">
-<span class="text-[10px] text-rose-400 font-bold uppercase">TEAM RED</span>
-<span class="text-[8px] text-slate-500 uppercase">Enemy</span>
+<span class="text-xs text-rose-400 font-bold uppercase">TEAM RED</span>
+<span class="text-[10px] text-slate-500 uppercase">Enemy</span>
 </div>
 <div class="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar pr-1">
 <div>
-<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">属性分布</span>
+<span class="text-[11px] text-slate-500 uppercase font-bold mb-1.5 block">属性分布</span>
 <div class="flex flex-wrap gap-1" id="enemy-type-dist">
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#3b82f6"></div>
-<span class="text-[9px] text-slate-300 font-bold">Water <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#3b82f6"></div>
+<span class="text-[11px] text-slate-300 font-bold">Water <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#f43f5e"></div>
-<span class="text-[9px] text-slate-300 font-bold">Psychic <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#f43f5e"></div>
+<span class="text-[11px] text-slate-300 font-bold">Psychic <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#a855f7"></div>
-<span class="text-[9px] text-slate-300 font-bold">Ghost <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#a855f7"></div>
+<span class="text-[11px] text-slate-300 font-bold">Ghost <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#7dd3fc"></div>
-<span class="text-[9px] text-slate-300 font-bold">Ice <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#7dd3fc"></div>
+<span class="text-[11px] text-slate-300 font-bold">Ice <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#a16207"></div>
-<span class="text-[9px] text-slate-300 font-bold">Ground <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#a16207"></div>
+<span class="text-[11px] text-slate-300 font-bold">Ground <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#eab308"></div>
-<span class="text-[9px] text-slate-300 font-bold">Electric <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#eab308"></div>
+<span class="text-[11px] text-slate-300 font-bold">Electric <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#0ea5e9"></div>
-<span class="text-[9px] text-slate-300 font-bold">Flying <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#0ea5e9"></div>
+<span class="text-[11px] text-slate-300 font-bold">Flying <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#475569"></div>
-<span class="text-[9px] text-slate-300 font-bold">Dark <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#475569"></div>
+<span class="text-[11px] text-slate-300 font-bold">Dark <span class="text-slate-500">x</span>1</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#ec4899"></div>
-<span class="text-[9px] text-slate-300 font-bold">Fairy <span class="text-slate-500">x</span>2</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#ec4899"></div>
+<span class="text-[11px] text-slate-300 font-bold">Fairy <span class="text-slate-500">x</span>2</span>
 </div>
-<div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-<div class="w-1 h-1 rounded-full" style="background:#22c55e"></div>
-<span class="text-[9px] text-slate-300 font-bold">Grass <span class="text-slate-500">x</span>1</span>
+<div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+<div class="w-1.5 h-1.5 rounded-full" style="background:#22c55e"></div>
+<span class="text-[11px] text-slate-300 font-bold">Grass <span class="text-slate-500">x</span>1</span>
 </div>
 </div>
 </div>
 <div class="pt-1 border-t border-white/5">
-<span class="text-[9px] text-slate-500 uppercase font-bold mb-1 block">防守弱点统计</span>
-<div class="flex flex-wrap gap-1.5" id="enemy-weakness-analysis">
+<span class="text-[11px] text-slate-500 uppercase font-bold mb-1.5 block">防守弱点统计</span>
+<div class="flex flex-wrap gap-2" id="enemy-weakness-analysis">
 <div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:bug" style="color:#84cc16"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:bug" style="color:#84cc16"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-600 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
 </div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Bug</span>
-</div>
-<div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:shield" style="color:#94a3b8"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
-</div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Steel</span>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Bug</span>
 </div>
 <div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:snowflake" style="color:#7dd3fc"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:shield" style="color:#94a3b8"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-600 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
 </div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Ice</span>
-</div>
-<div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:flask-poison" style="color:#a855f7"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
-</div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Poison</span>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Steel</span>
 </div>
 <div class="flex flex-col items-center group">
-<div class="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
-<iconify-icon class="text-sm" icon="mdi:lightning-bolt" style="color:#eab308"></iconify-icon>
-<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-slate-700 rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:snowflake" style="color:#7dd3fc"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-600 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
 </div>
-<span class="text-[8px] text-slate-500 mt-1 uppercase font-header font-bold">Electric</span>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Ice</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:flask-poison" style="color:#a855f7"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-600 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">3</div>
+</div>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Poison</span>
+</div>
+<div class="flex flex-col items-center group">
+<div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-white/5 relative group-hover:border-white/20 transition">
+<iconify-icon class="text-base" icon="mdi:lightning-bolt" style="color:#eab308"></iconify-icon>
+<div class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-700 rounded-full text-[10px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">2</div>
+</div>
+<span class="text-[10px] text-slate-500 mt-1 uppercase font-header font-bold">Electric</span>
 </div>
 </div>
 </div>
@@ -1785,24 +1882,44 @@ function createDatalist() {
 
         // 初始化数据
         const TYPES = {
-            'Normal':   { color: '#94a3b8', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/1.png' },
-            'Fighting': { color: '#ea580c', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/2.png' },
-            'Flying':   { color: '#81b9ef', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/3.png' },
-            'Poison':   { color: '#a855f7', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/4.png' },
-            'Ground':   { color: '#a16207', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/5.png' },
-            'Rock':     { color: '#afa981', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/6.png' },
-            'Bug':      { color: '#91a119', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/7.png' },
-            'Ghost':    { color: '#704170', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/8.png' },
-            'Steel':    { color: '#60a1b8', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/9.png' },
-            'Fire':     { color: '#ef4444', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/10.png' },
-            'Water':    { color: '#3b82f6', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/11.png' },
-            'Grass':    { color: '#22c55e', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/12.png' },
-            'Electric': { color: '#eab308', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/13.png' },
-            'Psychic':  { color: '#ef4179', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/14.png' },
-            'Ice':      { color: '#7dd3fc', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/15.png' },
-            'Dragon':   { color: '#6366f1', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/16.png' },
-            'Dark':     { color: '#50413f', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/17.png' },
-            'Fairy':    { color: '#ef70ef', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-ix/scarlet-violet/18.png' }
+            'Normal':   { color: '#94a3b8', img: 'Pokemon_icon/type/type1.svg' },
+            'Fire':     { color: '#ef4444', img: 'Pokemon_icon/type/type2.svg' },
+            'Water':    { color: '#3b82f6', img: 'Pokemon_icon/type/type3.svg' },
+            'Electric': { color: '#eab308', img: 'Pokemon_icon/type/type4.svg' },
+            'Grass':    { color: '#22c55e', img: 'Pokemon_icon/type/type5.svg' },
+            'Ice':      { color: '#7dd3fc', img: 'Pokemon_icon/type/type6.svg' },
+            'Fighting': { color: '#ea580c', img: 'Pokemon_icon/type/type7.svg' },
+            'Poison':   { color: '#a855f7', img: 'Pokemon_icon/type/type8.svg' },
+            'Ground':   { color: '#a16207', img: 'Pokemon_icon/type/type9.svg' },
+            'Flying':   { color: '#81b9ef', img: 'Pokemon_icon/type/type10.svg' },
+            'Psychic':  { color: '#ef4179', img: 'Pokemon_icon/type/type11.svg' },
+            'Bug':      { color: '#91a119', img: 'Pokemon_icon/type/type12.svg' },
+            'Rock':     { color: '#afa981', img: 'Pokemon_icon/type/type13.svg' },
+            'Ghost':    { color: '#704170', img: 'Pokemon_icon/type/type14.svg' },
+            'Dragon':   { color: '#6366f1', img: 'Pokemon_icon/type/type15.svg' },
+            'Dark':     { color: '#50413f', img: 'Pokemon_icon/type/type16.svg' },
+            'Steel':    { color: '#60a1b8', img: 'Pokemon_icon/type/type17.svg' },
+            'Fairy':    { color: '#ef70ef', img: 'Pokemon_icon/type/type18.svg' }
+        };
+
+        // 六属性标签（用于卡片属性条显示）
+        const STAT_LABELS = [
+            { key: 'hp', label: 'HP' },
+            { key: 'attack', label: 'A' },
+            { key: 'defense', label: 'D' },
+            { key: 'spAttack', label: 'SA' },
+            { key: 'spDefense', label: 'SD' },
+            { key: 'speed', label: 'S' }
+        ];
+
+        // 详细属性图标映射（iconify icon 名称）
+        const STAT_ICONS = {
+            hp: 'mdi:heart',
+            attack: 'mdi:arm-flex-outline',
+            defense: 'mdi:shield-outline',
+            spAttack: 'mdi:lightning-bolt',
+            spDefense: 'mdi:shield-check',
+            speed: 'mdi:speedometer'
         };
 
         let battleState = {
@@ -2145,9 +2262,9 @@ function togglePlayerMode() {
 
             const distContainer = document.getElementById(distId);
             distContainer.innerHTML = Object.entries(typeDist).map(([type, count]) => `
-                <div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
-                <div class="w-1 h-1 rounded-full" style="background:${TYPES[type]?.color}"></div>
-                <span class="text-[9px] text-slate-300 font-bold">${typeNameMap[type] || type} <span class="text-slate-500">x</span>${count}</span>
+                <div class="flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded border border-white/10 shrink-0 shadow-sm">
+                <div class="w-1.5 h-1.5 rounded-full" style="background:${TYPES[type]?.color}"></div>
+                <span class="text-[11px] text-slate-300 font-bold">${typeNameMap[type] || type} <span class="text-slate-500">x</span>${count}</span>
                 </div>
             `).join('');
 
@@ -2158,9 +2275,9 @@ function togglePlayerMode() {
             
             weakContainer.innerHTML = sortedWeaknesses.map(([w, count]) => `
                 <div class="flex flex-col items-center group">
-                <div class="relative">
-                <img class="w-[117px] h-[29px] object-contain" src="${TYPES[w]?.img}" alt="${typeNameMap[w] || w}" onerror="this.style.display='none'" />
-                <div class="absolute -top-1.5 -right-1.5 w-4 h-4 ${count >= 3 ? 'bg-rose-600' : 'bg-slate-700'} rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">${count}</div>
+                <div class="relative inline-block">
+                <img class="w-[38px] h-[38px] object-contain" src="${TYPES[w]?.img}" alt="${typeNameMap[w] || w}" onerror="this.style.display='none'" />
+                <div class="absolute -top-1 -right-1 w-4 h-4 ${count >= 3 ? 'bg-rose-600' : 'bg-slate-700'} rounded-full text-[8px] flex items-center justify-center font-bold text-white border border-white/10 shadow-lg">${count}</div>
                 </div>
                 </div>
             `).join('');
@@ -2292,7 +2409,7 @@ const pokemonImageMap = {
     '水晶灯火灵': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/609.png',
     '冻原熊': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/614.png',
     '泥巴鱼（合众）': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/618.png',
-    '泥巴鱼（伽勒尔）': 'https://media.52poke.com/wiki/1/11/618Stunfisk-Galar.png',
+    '泥巴鱼（伽勒尔）': 'https://media.52poke.com/wiki/thumb/1/11/618Stunfisk-Galar.png/480px-618Stunfisk-Galar.png',
     '泥偶巨人': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/623.png',
     '三首恶龙': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/635.png',
     '火神蛾': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/637.png',
@@ -2462,127 +2579,133 @@ function getPokemonImageUrl(pokemonName) {
 function createPokemonCard(pk, color, mode) {
     const hpClass = pk.hp > 50 ? 'hp-gradient-high' : (pk.hp > 20 ? 'hp-gradient-mid' : 'hp-gradient-low');
     const isSimple = (mode === 'simple');
-    
+
     // 粗略模式
     if (isSimple) {
         const weaknesses = getWeaknesses(pk.types);
+        const typeIcons = pk.types.map(t => `
+            <div class="flex items-center gap-2">
+                <img src="${TYPES[t]?.img}" class="simple-type-img" title="${t}">
+                <span class="text-[12px] font-bold text-slate-300">${typeNameMap[t] || t}</span>
+            </div>
+        `).join('');
+        const weaknessHtml = weaknesses.map(([t, m]) => `
+            <div class="flex items-center gap-1 bg-white/5 border border-white/10 rounded px-1.5 py-0.5">
+                <img src="${TYPES[t]?.img}" class="simple-weak-img" title="${t}">
+                <span class="simple-mult-text font-black ${m === 4 ? 'text-rose-500' : 'text-amber-400'}">${m}x</span>
+            </div>
+        `).join('');
         return `
             <div class="glass-panel rounded-xl p-2 border-l-[4px] border-${color}-500 hover:bg-white/5 transition duration-300">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 shrink-0 relative overflow-hidden">
-                        <img src="${getPokemonImageUrl(pk.name)}" 
-                             alt="${pk.name}" 
-                             class="w-full h-full object-cover"
-                             onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png';">
-                        <div class="absolute -bottom-1 -right-1 bg-slate-900/90 px-1 text-[8px] font-bold text-slate-400 rounded">L${pk.level}</div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-center mb-1">
-                            <div class="flex items-center gap-2">
-                                <input type="text" list="global-pokemon-list" value="${pk.name}" data-id="${pk.id}" data-side="${color}" class="font-bold text-base bg-transparent border border-white/20 rounded px-1 py-0 w-28 truncate focus:outline-none focus:border-amber-500" onchange="handlePokemonNameChange(this, '${pk.id}', '${color}')">
-                                <div class="flex gap-0.5">
-                                    ${pk.types.map(t => `<div class="w-2 h-2 rounded-full" style="background:${TYPES[t]?.color}" title="${t}"></div>`).join('')}
+                <div class="card-inner">
+                    <div class="card-bg-sprite" style="background-image: url('${getPokemonImageUrl(pk.name)}')"></div>
+                    <div class="card-info">
+                        <div class="flex gap-2">
+
+                            <!-- ===== 左半部分：名字 + 自身属性 ===== -->
+                            <div class="w-[45%] flex flex-col gap-1.5 min-w-0">
+                                <!-- 名字栏 -->
+                                <div class="flex items-center gap-1">
+                                    <input type="text" list="global-pokemon-list" value="${pk.name}" data-id="${pk.id}" data-side="${color}" class="font-bold text-sm bg-transparent border border-white/20 rounded px-1 py-0 truncate focus:outline-none focus:border-amber-500" onchange="handlePokemonNameChange(this, '${pk.id}', '${color}')">
+                                    <span class="text-[8px] font-header font-bold text-slate-400 shrink-0">Lv${pk.level}</span>
+                                </div>
+                                <!-- 属性标题 + 图标 + 中文名 -->
+                                <div>
+                                    <div class="section-title">属性</div>
+                                    <div class="flex flex-col gap-1.5">${typeIcons}</div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <div class="flex gap-2">
-                                    ${weaknesses.map(([t, m]) => `
-                                        <div class="flex flex-col items-center leading-none">
-                                            <span class="text-[14px] text-slate-500 font-bold">${typeNameMap[t] || t}</span>
-                                            <span class="text-2xl font-black ${m === 4 ? 'text-rose-500 drop-shadow-[0_0_5px_rgba(244,63,94,0.5)]' : 'text-amber-400'}">${m}x</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                                <div class="flex items-center gap-1 border-l border-white/10 pl-2">
-                                    <span class="text-[10px] font-header font-bold text-amber-500 bg-amber-500/10 px-1 rounded">S:${pk.speed}</span>
-                                    <button onclick="toggleStatus('${pk.id}')" class="w-5 h-5 flex items-center justify-center bg-slate-800 rounded border border-white/5">
-                                        <iconify-icon icon="${pk.status === 'none' ? 'mdi:emoticon-happy-outline' : 'mdi:alert-circle'}" class="text-xs ${pk.status === 'none' ? 'text-slate-500' : 'text-amber-400'}"></iconify-icon>
+
+                            <!-- ===== 右半部分：速度+状态 / 弱点 ===== -->
+                            <div class="flex-1 flex flex-col gap-1.5 min-w-0">
+                                <!-- 速度 + 状态 -->
+                                <div class="flex items-center justify-end gap-2">
+                                    <span class="text-[10px] font-header font-bold text-amber-500 bg-amber-500/10 px-1.5 rounded">S:${pk.speed}</span>
+                                    <button onclick="toggleStatus('${pk.id}')" class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition">
+                                        <iconify-icon icon="${pk.status === 'none' ? 'mdi:check-circle-outline' : 'mdi:alert-circle-outline'}" class="${pk.status === 'none' ? 'text-green-500' : 'text-amber-500'}"></iconify-icon>
+                                        <span class="${pk.status === 'none' ? 'text-slate-400' : 'text-amber-400'} font-bold uppercase">${pk.status === 'none' ? 'Normal' : pk.status}</span>
                                     </button>
                                 </div>
+                                <!-- 弱点标题 + 放大图标 + 倍率 -->
+                                <div>
+                                    <div class="section-title">弱点</div>
+                                    <div class="flex gap-3 flex-wrap">${weaknessHtml}</div>
+                                </div>
                             </div>
+
                         </div>
-                        <div class="flex items-center gap-2">
-                            <div class="h-2 flex-1 bg-slate-900 rounded-full overflow-hidden border border-white/5">
-                                <div class="h-full ${hpClass} transition-all duration-500" style="width: ${pk.hp}%"></div>
-                            </div>
-                            <span class="font-mono text-[10px] font-bold ${pk.hp > 20 ? 'text-slate-400' : 'text-rose-500'} w-8 text-right">${pk.hp}%</span>
-                        </div>
-                        <input type="range" min="0" max="100" value="${pk.hp}" oninput="updateHP('${pk.id}', this.value)" class="w-full h-1 mt-1 accent-${color}-500">
                     </div>
                 </div>
             </div>
         `;
     }
-    
-    // 详细模式（属性标签已修复）
+
+    // 详细模式
+    const statsBarHtml = STAT_LABELS.map(({ key, label }) => {
+        const base = pk[key] || 80;
+        const barWidth = Math.min(Math.round((base / 200) * 100), 100);
+        return `<div class="stat-row-with-icon">
+            <div class="stat-icon-wrap"><iconify-icon icon="${STAT_ICONS[key]}" class="text-sm text-slate-400"></iconify-icon></div>
+            <span class="stat-label">${label}</span>
+            <div class="stat-bar-container">
+                <div class="stat-bar ${key}" style="width: ${barWidth}%"></div>
+            </div>
+            <span class="stat-value">${base}</span>
+        </div>`;
+    }).join('');
+    const movesHtml = pk.moves.slice(0, 4).map(m => `
+        <div class="bg-white/5 border border-white/5 rounded py-2 text-center relative" title="${m.name} (PP ${m.pp})">
+            <span class="text-[11px] text-slate-400 block truncate px-0.5 font-bold uppercase">${m.name.substring(0,4)}</span>
+        </div>
+    `).join('');
     return `
-        <div class="glass-panel rounded-xl p-2.5 border-l-[4px] border-${color}-500 hover:bg-white/5 transition duration-300">
-            <div class="flex gap-3">
-                <!-- 左侧头像 + 属性标签 -->
-                <div class="flex flex-col items-center w-14 shrink-0">
-                    <div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700 relative mb-1 overflow-hidden">
-                        <img src="${getPokemonImageUrl(pk.name)}" 
-                             alt="${pk.name}" 
-                             class="w-full h-full object-cover"
-                             onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png';">
-                        <div class="absolute bottom-0 right-0 bg-slate-900 px-1 text-[8px] font-bold text-slate-400 rounded">Lv${pk.level}</div>
-                    </div>
-                    <!-- 属性标签（中文显示） -->
-                    <div class="flex flex-col w-full gap-0.5">
-                        ${pk.types.map(t => `<div class="text-[8px] text-center font-black uppercase rounded py-0.5 text-white/90 shadow-sm" style="background:${TYPES[t]?.color}">${typeNameMap[t] || t}</div>`).join('')}
-                    </div>
-                </div>
-                
-                <!-- 右侧主信息 -->
-                <div class="flex-1 min-w-0">
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="flex items-center gap-1.5 min-w-0">
-                            <input type="text" list="global-pokemon-list" value="${pk.name}" data-id="${pk.id}" data-side="${color}" class="font-bold text-base bg-transparent border border-white/20 rounded px-1 py-0 w-28 truncate focus:outline-none focus:border-amber-500" onchange="handlePokemonNameChange(this, '${pk.id}', '${color}')">
-                            ${pk.sex === 'male' ? '<iconify-icon icon="mdi:gender-male" class="text-blue-400 text-xs"></iconify-icon>' : (pk.sex === 'female' ? '<iconify-icon icon="mdi:gender-female" class="text-rose-400 text-xs"></iconify-icon>' : '')}
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <div class="text-right leading-none">
-                                <span class="text-[7px] text-slate-500 block uppercase">Speed</span>
-                                <span class="text-[11px] font-header font-bold text-amber-500">${pk.speed}</span>
-                            </div>
-                            <button onclick="toggleStatus('${pk.id}')" class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition">
-                                <iconify-icon icon="${pk.status === 'none' ? 'mdi:check-circle-outline' : 'mdi:alert-circle-outline'}" class="${pk.status === 'none' ? 'text-green-500' : 'text-amber-500'}"></iconify-icon>
-                                <span class="${pk.status === 'none' ? 'text-slate-400' : 'text-amber-400'} font-bold uppercase">${pk.status === 'none' ? 'Normal' : pk.status}</span>
-                            </button>
-                        </div>
-                    </div>
+        <div class="glass-panel rounded-xl p-2 border-l-[4px] border-${color}-500 hover:bg-white/5 transition duration-300">
+            <div class="card-inner">
+                <div class="card-bg-sprite" style="background-image: url('${getPokemonImageUrl(pk.name)}')"></div>
+                <div class="card-info">
+                    <div class="flex gap-3">
 
-                    <!-- HP 区域 -->
-                    <div class="mb-2 bg-black/20 p-1.5 rounded-lg border border-white/5">
-                        <div class="flex justify-between items-center text-[9px] mb-1">
-                            <div class="flex items-center gap-1.5">
-                                <iconify-icon icon="mdi:heart" class="${pk.hp > 20 ? 'text-green-500' : 'text-rose-500'}"></iconify-icon>
-                                <span class="font-header font-bold ${pk.hp > 20 ? 'text-slate-300' : 'text-rose-500'}">${pk.hp}%</span>
-                            </div>
-                            <div class="flex items-center gap-1.5 ${pk.itemUsed ? 'opacity-30' : ''}" title="${pk.item || '点击选择道具'}">
-                                <img src="${getItemSprite(pk.item)}" class="w-5 h-5 object-contain cursor-pointer hover:opacity-80 transition" onclick="event.stopPropagation(); toggleItem('${pk.id}')" onerror="this.src='${ITEM_FALLBACK}'">
-                                <span class="text-[9px] text-slate-400 truncate w-16 text-right cursor-pointer hover:text-amber-400 transition" onclick="showItemSelector('${pk.id}')">${pk.item || '无道具'}</span>
-                            </div>
-                        </div>
-                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                            <div class="h-full ${hpClass} transition-all duration-500" style="width: ${pk.hp}%"></div>
-                        </div>
-                        <input type="range" min="0" max="100" value="${pk.hp}" oninput="updateHP('${pk.id}', this.value)" class="w-full h-1 mt-1 accent-${color}-500 cursor-pointer">
-                    </div>
-
-                    <!-- 特性与招式 -->
-                    <div class="flex items-center gap-2">
-                        <div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 max-w-[80px]">
-                            <iconify-icon icon="mdi:xml" class="text-[10px] text-blue-400"></iconify-icon>
-                            <span class="text-[9px] text-slate-300 truncate font-bold uppercase">${pk.ability}</span>
-                        </div>
-                        <div class="flex-1 grid grid-cols-4 gap-1">
-                            ${pk.moves.slice(0, 4).map(m => `
-                                <div class="bg-white/5 border border-white/5 rounded py-0.5 text-center group-hover:border-white/10 relative" title="${m.name} (PP ${m.pp})">
-                                    <span class="text-[8px] text-slate-400 block truncate px-0.5 font-bold uppercase">${m.name.substring(0,2)}</span>
+                        <!-- ===== 左半部分：名字 + 详细属性 ===== -->
+                        <div class="w-[45%] flex flex-col gap-2 min-w-0">
+                            <!-- 名字栏 -->
+                            <div class="flex items-center gap-1">
+                                <input type="text" list="global-pokemon-list" value="${pk.name}" data-id="${pk.id}" data-side="${color}" class="font-bold text-sm bg-transparent border border-white/20 rounded px-1 py-0 truncate focus:outline-none focus:border-amber-500" onchange="handlePokemonNameChange(this, '${pk.id}', '${color}')">
+                                <div class="flex gap-0.5 shrink-0">
+                                    ${pk.types.map(t => `<div class="w-2 h-2 rounded-full" style="background:${TYPES[t]?.color}" title="${t}"></div>`).join('')}
                                 </div>
-                            `).join('')}
+                                ${pk.sex === 'male' ? '<iconify-icon icon="mdi:gender-male" class="text-blue-400 text-xs shrink-0"></iconify-icon>' : (pk.sex === 'female' ? '<iconify-icon icon="mdi:gender-female" class="text-rose-400 text-xs shrink-0"></iconify-icon>' : '')}
+                                <span class="text-[8px] font-header font-bold text-slate-400 shrink-0">Lv${pk.level}</span>
+                            </div>
+                            <!-- 详细属性条（带图标） -->
+                            <div>${statsBarHtml}</div>
                         </div>
+
+                        <!-- ===== 右半部分：状态 + 道具/特性 + 招式 ===== -->
+                        <div class="flex-1 flex flex-col gap-2 min-w-0">
+                            <!-- 状态栏 -->
+                            <div class="flex justify-end">
+                                <button onclick="toggleStatus('${pk.id}')" class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/5 text-[9px] hover:bg-slate-700 transition">
+                                    <iconify-icon icon="${pk.status === 'none' ? 'mdi:check-circle-outline' : 'mdi:alert-circle-outline'}" class="${pk.status === 'none' ? 'text-green-500' : 'text-amber-500'}"></iconify-icon>
+                                    <span class="${pk.status === 'none' ? 'text-slate-400' : 'text-amber-400'} font-bold uppercase">${pk.status === 'none' ? 'Normal' : pk.status}</span>
+                                </button>
+                            </div>
+                            <!-- 道具 + 特性（同行） -->
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-1.5 ${pk.itemUsed ? 'opacity-30' : ''}" title="${pk.item || '点击选择道具'}">
+                                    <img src="${getItemSprite(pk.item)}" class="w-5 h-5 object-contain cursor-pointer hover:opacity-80 transition shrink-0" onclick="event.stopPropagation(); toggleItem('${pk.id}')" onerror="this.src='${ITEM_FALLBACK}'">
+                                    <span class="text-[9px] text-slate-400 truncate cursor-pointer hover:text-amber-400 transition" onclick="showItemSelector('${pk.id}')">${pk.item || '无道具'}</span>
+                                </div>
+                                <div class="bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
+                                    <iconify-icon icon="mdi:xml" class="text-[10px] text-blue-400 shrink-0"></iconify-icon>
+                                    <span class="text-[9px] text-slate-300 truncate font-bold uppercase">${pk.ability}</span>
+                                </div>
+                            </div>
+                            <!-- 四个招式 2x2 -->
+                            <div class="grid grid-cols-2 gap-1.5">
+                                ${movesHtml}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -2615,6 +2738,11 @@ async function handlePokemonNameChange(inputElement, pokemonId, side) {
         // 更新宝可梦对象（保留 ID、队伍归属）
         pokemon.name = data.name;
         pokemon.types = data.types;
+        pokemon.hp = data.baseStats.hp;
+        pokemon.attack = data.baseStats.attack;
+        pokemon.defense = data.baseStats.defense;
+        pokemon.spAttack = data.baseStats.spAttack;
+        pokemon.spDefense = data.baseStats.spDefense;
         pokemon.speed = data.baseStats.speed;   // 速度种族值
         pokemon.ability = data.abilities[0] || '未知特性';
         pokemon.level = 50;
@@ -2842,4 +2970,197 @@ function getRandomSex(genderRatio) {
         // 初始化渲染
         renderTeams();
     </script>
+
+<!-- ===== 实时调节面板 ===== -->
+<div id="debug-panel" class="fixed bottom-4 right-4 w-72 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-[9999] text-white overflow-hidden" style="display:none;">
+    <div class="flex items-center justify-between px-3 py-2 bg-white/5 border-b border-white/10 cursor-pointer" onclick="toggleDebugSection('debug-body')">
+        <span class="text-[11px] font-bold tracking-wider text-amber-400">实时调节面板</span>
+        <iconify-icon icon="mdi:chevron-down" class="text-slate-400" id="debug-chevron"></iconify-icon>
+    </div>
+    <div id="debug-body" class="p-3 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
+
+        <!-- 详细模式 - 属性条 -->
+        <div>
+            <div class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1.5">详细模式 - 属性条</div>
+            <div class="space-y-1.5">
+                <div><label class="text-[9px] text-slate-400">行高 <span id="v-stat-row-height">24</span>px</label>
+                <input type="range" min="14" max="40" value="24" class="w-full" oninput="setCss('--stat-row-height', this.value, 'px'); document.getElementById('v-stat-row-height').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">行间距 <span id="v-stat-row-gap">6</span>px</label>
+                <input type="range" min="0" max="16" value="6" class="w-full" oninput="setCss('--stat-row-gap', this.value, 'px'); document.getElementById('v-stat-row-gap').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">属性条高度 <span id="v-stat-bar-height">6</span>px</label>
+                <input type="range" min="2" max="14" value="6" class="w-full" oninput="setCss('--stat-bar-height', this.value, 'px'); document.getElementById('v-stat-bar-height').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">图标大小 <span id="v-stat-icon-size">18</span>px</label>
+                <input type="range" min="8" max="32" value="18" class="w-full" oninput="setCss('--stat-icon-size', this.value, 'px'); document.getElementById('v-stat-icon-size').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">标签字号 <span id="v-stat-label-size">12</span>px</label>
+                <input type="range" min="6" max="20" value="12" class="w-full" oninput="setCss('--stat-label-size', this.value, 'px'); document.getElementById('v-stat-label-size').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">标签宽度 <span id="v-stat-label-width">20</span>px</label>
+                <input type="range" min="10" max="40" value="20" class="w-full" oninput="setCss('--stat-label-width', this.value, 'px'); document.getElementById('v-stat-label-width').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">数值字号 <span id="v-stat-value-size">13</span>px</label>
+                <input type="range" min="6" max="20" value="13" class="w-full" oninput="setCss('--stat-value-size', this.value, 'px'); document.getElementById('v-stat-value-size').textContent=this.value"></div>
+            </div>
+        </div>
+
+        <!-- 详细模式 - 招式 -->
+        <div>
+            <div class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1.5">详细模式 - 招式</div>
+            <div class="space-y-1.5">
+                <div><label class="text-[9px] text-slate-400">招式字号 <span id="v-move-font-size">11</span>px</label>
+                <input type="range" min="6" max="18" value="11" class="w-full" oninput="updateMoveFontSize(this.value); document.getElementById('v-move-font-size').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">招式内边距 <span id="v-move-padding">8</span>px</label>
+                <input type="range" min="2" max="16" value="8" class="w-full" oninput="updateMovePadding(this.value); document.getElementById('v-move-padding').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">招式间距 <span id="v-move-gap">6</span>px</label>
+                <input type="range" min="0" max="12" value="6" class="w-full" oninput="updateMoveGap(this.value); document.getElementById('v-move-gap').textContent=this.value"></div>
+            </div>
+        </div>
+
+        <!-- 粗略模式 - 图标 -->
+        <div>
+            <div class="text-[10px] font-bold text-green-400 uppercase tracking-wider mb-1.5">粗略模式 - 图标</div>
+            <div class="space-y-1.5">
+                <div><label class="text-[9px] text-slate-400">属性图标 <span id="v-simple-type-icon">64</span>px</label>
+                <input type="range" min="16" max="128" value="64" class="w-full" oninput="updateSimpleTypeIcon(this.value); document.getElementById('v-simple-type-icon').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">弱点图标 <span id="v-simple-weak-icon">32</span>px</label>
+                <input type="range" min="16" max="96" value="32" class="w-full" oninput="updateSimpleWeakIcon(this.value); document.getElementById('v-simple-weak-icon').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">属性间距 <span id="v-type-gap">6</span>px</label>
+                <input type="range" min="0" max="16" value="6" class="w-full" oninput="updateTypeGap(this.value); document.getElementById('v-type-gap').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">弱点徽章间距 <span id="v-weak-gap">6</span>px</label>
+                <input type="range" min="0" max="20" value="6" class="w-full" oninput="updateWeakGap(this.value); document.getElementById('v-weak-gap').textContent=this.value"></div>
+                <div><label class="text-[9px] text-slate-400">倍率字号 <span id="v-mult-size">14</span>px</label>
+                <input type="range" min="8" max="28" value="18" class="w-full" oninput="updateMultSize(this.value); document.getElementById('v-mult-size').textContent=this.value"></div>
+            </div>
+        </div>
+
+        <!-- 卡片间距 -->
+        <div>
+            <div class="text-[10px] font-bold text-purple-400 uppercase tracking-wider mb-1.5">卡片布局</div>
+            <div class="space-y-1.5">
+                <div><label class="text-[9px] text-slate-400">卡片左右间距 <span id="v-card-col-gap">12</span>px</label>
+                <input type="range" min="0" max="24" value="12" class="w-full" oninput="updateCardColGap(this.value); document.getElementById('v-card-col-gap').textContent=this.value"></div>
+            </div>
+        </div>
+
+        <!-- 按钮 -->
+        <div class="flex gap-2 pt-1 border-t border-white/10">
+            <button onclick="resetDebugValues()" class="flex-1 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 rounded py-1.5 transition">重置默认值</button>
+            <button onclick="exportCssValues()" class="flex-1 text-[10px] bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 text-amber-400 rounded py-1.5 transition">导出 CSS 代码</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 粗略模式动态图标尺寸 */
+.simple-type-img { width: var(--simple-type-icon-size, 44px); height: var(--simple-type-icon-size, 44px); object-fit: contain; }
+.simple-weak-img { width: var(--simple-weak-icon-size, 37px); height: var(--simple-weak-icon-size, 37px); object-fit: contain; }
+</style>
+
+<script>
+// 调节面板功能
+function setCss(varName, value, unit) {
+    document.documentElement.style.setProperty(varName, value + (unit || ''));
+}
+
+function toggleDebugSection(id) {
+    const el = document.getElementById(id);
+    const chevron = document.getElementById('debug-chevron');
+    if (el.style.display === 'none') {
+        el.style.display = 'block';
+        chevron.setAttribute('icon', 'mdi:chevron-down');
+    } else {
+        el.style.display = 'none';
+        chevron.setAttribute('icon', 'mdi:chevron-up');
+    }
+}
+
+function updateMoveFontSize(val) {
+    document.querySelectorAll('.move-name-text').forEach(el => { el.style.fontSize = val + 'px'; });
+}
+function updateMovePadding(val) {
+    document.querySelectorAll('[class*="rounded"][class*="text-center"]').forEach(el => {
+        if (el.querySelector('.move-name-text')) { el.style.paddingTop = val + 'px'; el.style.paddingBottom = val + 'px'; }
+    });
+}
+function updateMoveGap(val) {
+    document.querySelectorAll('.moves-grid').forEach(el => { el.style.gap = val + 'px'; });
+}
+
+function updateSimpleTypeIcon(val) {
+    document.documentElement.style.setProperty('--simple-type-icon-size', val + 'px');
+    document.querySelectorAll('.simple-type-img').forEach(el => { el.style.width = val + 'px'; el.style.height = val + 'px'; });
+}
+function updateSimpleWeakIcon(val) {
+    document.documentElement.style.setProperty('--simple-weak-icon-size', val + 'px');
+    document.querySelectorAll('.simple-weak-img').forEach(el => { el.style.width = val + 'px'; el.style.height = val + 'px'; });
+}
+function updateTypeGap(val) {
+    document.querySelectorAll('.simple-type-group').forEach(el => { el.style.gap = val + 'px'; });
+}
+function updateWeakGap(val) {
+    document.querySelectorAll('.simple-weakness-group').forEach(el => { el.style.gap = val + 'px'; });
+}
+function updateMultSize(val) {
+    document.querySelectorAll('.simple-mult-text').forEach(el => { el.style.fontSize = val + 'px'; });
+}
+function updateCardColGap(val) {
+    document.querySelectorAll('.card-info > .flex').forEach(el => { el.style.gap = val + 'px'; });
+}
+
+function resetDebugValues() {
+    const defaults = {
+        '--stat-row-height': '20px', '--stat-row-gap': '3px', '--stat-bar-height': '3px',
+        '--stat-icon-size': '21px', '--stat-label-size': '12px', '--stat-label-width': '29px',
+        '--stat-value-size': '13px', '--simple-type-icon-size': '44px', '--simple-weak-icon-size': '37px'
+    };
+    Object.entries(defaults).forEach(([k, v]) => setCss(k, parseInt(v), 'px'));
+    document.documentElement.style.cssText = '';
+    location.reload();
+}
+
+function exportCssValues() {
+    const root = document.documentElement;
+    const vars = ['--stat-row-height', '--stat-row-gap', '--stat-bar-height', '--stat-icon-size', '--stat-label-size', '--stat-label-width', '--stat-value-size', '--simple-type-icon-size', '--simple-weak-icon-size'];
+    let css = '/* 当前调节的 CSS 值 */\n:root {\n';
+    vars.forEach(v => {
+        const val = root.style.getPropertyValue(v);
+        if (val) css += `    ${v}: ${val};\n`;
+    });
+    css += '}';
+    navigator.clipboard.writeText(css).then(() => alert('CSS 代码已复制到剪贴板！\n\n' + css)).catch(() => prompt('复制以下 CSS 代码：', css));
+}
+
+// 页面加载时给卡片元素添加标记 class
+(function addDebugMarkers() {
+    const origRender = window.renderTeams;
+    if (origRender) {
+        window.renderTeams = function() {
+            origRender();
+            setTimeout(applyDebugMarkers, 100);
+        };
+    }
+})();
+
+function applyDebugMarkers() {
+    // 招式文字
+    document.querySelectorAll('.grid.grid-cols-2 > div > span').forEach(el => { el.classList.add('move-name-text'); });
+    // 招式网格
+    document.querySelectorAll('.grid.grid-cols-2').forEach(el => { el.classList.add('moves-grid'); });
+    // 粗略模式属性图标
+    document.querySelectorAll('.section-title + .flex > .flex').forEach(el => {
+        el.classList.add('simple-type-group');
+        const img = el.querySelector('img');
+        if (img) { img.classList.add('simple-type-img'); }
+    });
+    // 粗略模式弱点图标
+    document.querySelectorAll('.section-title ~ .flex-wrap > .flex-col').forEach(el => {
+        el.classList.add('simple-weakness-group');
+        const img = el.querySelector('img');
+        if (img) { img.classList.add('simple-weak-img'); }
+        const span = el.querySelector('span');
+        if (span) { span.classList.add('simple-mult-text'); }
+    });
+}
+
+// 初始渲染后自动标记
+const observer = new MutationObserver(() => applyDebugMarkers());
+observer.observe(document.body, { childList: true, subtree: true });
+</script>
 </body></html>
