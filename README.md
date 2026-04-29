@@ -682,3 +682,7 @@ Normal, Fire, Water, Electric, Grass, Ice, Fighting, Poison, Ground, Flying, Psy
 | Dark | 恶 | #475569 |
 | Steel | 钢 | #94a3b8 |
 | Fairy | 妖精 | #ec4899 |
+
+### 11. 联系方式
+如果您有任何疑问，请提出问题或通过 271637566@qq.com 联系我们。
+
