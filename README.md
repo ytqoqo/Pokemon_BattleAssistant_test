@@ -7,7 +7,52 @@
 **当前版本：** V6.2.0
 **更新日期：** 2026-04-29  
 **规则格式：** Pokemon Champiao M-A
-## 快速使用地址；https://ytqoqo.github.io/Pokemon_BattleAssistant_test/public/
+
+## 目录
+
+- [2. 项目架构总览](#2-项目架构总览)
+  - [2.1 技术栈](#21-技术栈)
+  - [2.2 项目文件结构](#22-项目文件结构)
+  - [2.3 运行方式](#23-运行方式)
+- [3. 前端功能详情](#3-前端功能详情)
+  - [3.1 对战环境监控面板](#31-对战环境监控面板)
+  - [3.2 队伍展示与管理](#32-队伍展示与管理)
+  - [3.3 宝可梦状态卡片](#33-宝可梦状态卡片)
+  - [3.4 速度排名系统](#34-速度排名系统)
+  - [3.5 队伍弱点分析](#35-队伍弱点分析)
+  - [3.6 属性克制计算](#36-属性克制计算)
+  - [3.7 队伍方案管理](#37-队伍方案管理)
+  - [3.8 道具系统](#38-道具系统)
+  - [3.9 属性图标系统](#39-属性图标系统)
+- [4. 后端 API 详细文档](#4-后端-api-详细文档)
+  - [4.1 GET /api/pokemon/:nameOrId](#41-get-apipokemonnameorid)
+  - [4.2 GET /api/team/templates](#42-get-apiteamtemplates)
+  - [4.3 POST /api/battle/sync](#43-post-apibattlesync)
+  - [4.4 GET /api/battle/sync/:id?](#44-get-apibattlesyncid)
+  - [4.5 POST /api/battle/calc_damage](#45-post-apibattlecalc_damage)
+- [5. 数据层详细说明](#5-数据层详细说明)
+  - [5.1 data/pokemon.js - 宝可梦图鉴](#51-datapokemonjs---宝可梦图鉴)
+  - [5.2 data/moves.js - 招式数据库](#52-datamovesjs---招式数据库)
+  - [5.3 data/typeChart.js - 属性克制表](#53-datatypechartjs---属性克制表)
+  - [5.4 data/templates.js - 队伍模板](#54-datatemplatesjs---队伍模板)
+  - [5.5 utils/damageCalculator.js - 伤害计算器](#55-utilsdamagecalculatorjs---伤害计算器)
+- [6. 前端 JavaScript 核心逻辑](#6-前端-javascript-核心逻辑)
+  - [6.1 全局常量](#61-全局常量)
+  - [6.2 核心函数调用链](#62-核心函数调用链)
+  - [6.3 初始化队伍数据](#63-初始化队伍数据)
+  - [6.4 计时器](#64-计时器)
+- [7. 前后端交互时序](#7-前后端交互时序)
+- [8. 已知限制和待完善项](#8-已知限制和待完善项)
+  - [8.1 前端限制](#81-前端限制)
+  - [8.2 后端限制](#82-后端限制)
+  - [8.3 数据层限制](#83-数据层限制)
+- [9. 后续扩展方向](#9-后续扩展方向)
+  - [9.1 高优先级](#91-高优先级)
+  - [9.2 中优先级](#92-中优先级)
+  - [9.3 低优先级](#93-低优先级)
+- [10. 附录：属性对照表](#10-附录属性对照表)
+- [11. 联系方式](#11-联系方式)
+
 ---
 
 ## 2. 项目架构总览
@@ -683,6 +728,6 @@ Normal, Fire, Water, Electric, Grass, Ice, Fighting, Poison, Ground, Flying, Psy
 | Steel | 钢 | #94a3b8 |
 | Fairy | 妖精 | #ec4899 |
 
+
 ### 11. 联系方式
 如果您有任何疑问，请提出问题或通过 271637566@qq.com 联系我们。
-
