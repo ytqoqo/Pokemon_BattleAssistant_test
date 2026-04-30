@@ -7,6 +7,7 @@
 **当前版本：** V6.2.0
 **更新日期：** 2026-04-29  
 **规则格式：** Pokemon Champiao M-A
+**网站链接：** https://ytqoqo.github.io/Pokemon_BattleAssistant_test/public/
 
 ## 目录
 
